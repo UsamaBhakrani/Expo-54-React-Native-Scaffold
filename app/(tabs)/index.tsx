@@ -1,19 +1,31 @@
+import { useIsFocused } from "@react-navigation/native";
+import { useEffect } from "react";
 import { StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import TabAnimatedView from "@/components/ui/tab-animated-view";
+import { useTabDirection } from "@/components/ui/tab-direction";
 
 export default function HomeScreen() {
+  const isFocused = useIsFocused();
+  const { setIndex } = useTabDirection();
+
+  useEffect(() => {
+    if (isFocused) setIndex(0);
+  }, [isFocused, setIndex]);
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ThemedView style={styles.container}>
-        <ThemedText type="title">Home</ThemedText>
-        <ThemedText style={styles.subtitle}>
-          Your dashboard is ready. Use the tabs to browse ledgers, suppliers,
-          and expenses.
-        </ThemedText>
-      </ThemedView>
+      <TabAnimatedView style={{ flex: 1 }}>
+        <ThemedView style={styles.container}>
+          <ThemedText type="title">Home</ThemedText>
+          <ThemedText style={styles.subtitle}>
+            Your dashboard is ready. Use the tabs to browse ledgers, suppliers,
+            and expenses.
+          </ThemedText>
+        </ThemedView>
+      </TabAnimatedView>
     </SafeAreaView>
   );
 }

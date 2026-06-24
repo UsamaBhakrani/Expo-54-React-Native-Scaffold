@@ -1,19 +1,31 @@
+import { useIsFocused } from "@react-navigation/native";
+import { useEffect } from "react";
 import { StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import TabAnimatedView from "@/components/ui/tab-animated-view";
+import { useTabDirection } from "@/components/ui/tab-direction";
 
 export default function SuppliersScreen() {
+  const isFocused = useIsFocused();
+  const { setIndex } = useTabDirection();
+
+  useEffect(() => {
+    if (isFocused) setIndex(2);
+  }, [isFocused, setIndex]);
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ThemedView style={styles.container}>
-        <ThemedText type="title">Suppliers</ThemedText>
-        <ThemedText style={styles.description}>
-          Keep supplier contacts and purchase details in one place. Add new
-          suppliers and manage existing vendors.
-        </ThemedText>
-      </ThemedView>
+      <TabAnimatedView style={{ flex: 1 }}>
+        <ThemedView style={styles.container}>
+          <ThemedText type="title">Suppliers</ThemedText>
+          <ThemedText style={styles.description}>
+            Keep supplier contacts and purchase details in one place. Add new
+            suppliers and manage existing vendors.
+          </ThemedText>
+        </ThemedView>
+      </TabAnimatedView>
     </SafeAreaView>
   );
 }

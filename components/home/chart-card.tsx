@@ -166,7 +166,7 @@ const styles = StyleSheet.create({
     color: "#fff",
   },
   chartContainer: {
-    marginTop: 18,
+    marginTop: 10,
   },
   tipRow: {
     flexDirection: "row",

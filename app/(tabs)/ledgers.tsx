@@ -1,18 +1,18 @@
-import { Link } from "expo-router";
 import { StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 
-export default function ModalScreen() {
+export default function LedgersScreen() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ThemedView style={styles.container}>
-        <ThemedText type="title">This is a modal</ThemedText>
-        <Link href="/" dismissTo style={styles.link}>
-          <ThemedText type="link">Go to home screen</ThemedText>
-        </Link>
+        <ThemedText type="title">Ledgers</ThemedText>
+        <ThemedText style={styles.description}>
+          Review and update your financial ledgers. All your entries are
+          organized by date and category.
+        </ThemedText>
       </ThemedView>
     </SafeAreaView>
   );
@@ -24,12 +24,12 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 20,
+    padding: 24,
+    gap: 16,
   },
-  link: {
-    marginTop: 15,
-    paddingVertical: 15,
+  description: {
+    fontSize: 18,
+    lineHeight: 26,
+    marginTop: 16,
   },
 });

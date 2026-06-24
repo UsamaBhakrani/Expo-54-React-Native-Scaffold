@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import HomeTabs from "@/components/home/home-tabs";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import TabAnimatedView from "@/components/ui/tab-animated-view";
@@ -21,9 +22,9 @@ export default function HomeScreen() {
         <ThemedView style={styles.container}>
           <ThemedText type="title">Home</ThemedText>
           <ThemedText style={styles.subtitle}>
-            Your dashboard is ready. Use the tabs to browse ledgers, suppliers,
-            and expenses.
+            Your dashboard is ready.
           </ThemedText>
+          <HomeTabs />
         </ThemedView>
       </TabAnimatedView>
     </SafeAreaView>

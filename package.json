@@ -5,10 +5,16 @@
   "scripts": {
     "start": "expo start",
     "reset-project": "node ./scripts/reset-project.js",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
     "web": "expo start --web",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "local-production": "eas build -p android --profile production --local",
+    "ota": "eas update -p android --branch production",
+    "eas-prod": "eas build -p android --profile production",
+    "eas-preview": "eas build -p android --profile preview",
+    "prebuild": "npx expo prebuild --platform android",
+    "generate": "cd android && ./gradlew clean && ./gradlew assembleRelease"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
@@ -17,6 +23,7 @@
     "@react-navigation/elements": "^2.6.3",
     "@react-navigation/native": "^7.1.8",
     "babel-plugin-inline-import": "^3.0.0",
+    "babel-preset-expo": "~54.0.10",
     "drizzle-orm": "^0.45.2",
     "expo": "~54.0.34",
     "expo-constants": "~18.0.13",
@@ -46,6 +53,8 @@
   "devDependencies": {
     "@types/react": "~19.1.0",
     "drizzle-kit": "^0.31.10",
+    "@babel/core": "^7.25.2",
+    "babel-plugin-inline-import": "^3.0.0",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~10.0.0",
     "typescript": "~5.9.2"

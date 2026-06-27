@@ -1,7 +1,9 @@
 import ChartCard from "@/components/home/chart-card";
 import StatsCapsules from "@/components/home/stats-capsules";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import React from "react";
-import { ScrollView, StyleSheet, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 
 const cards = [
   {
@@ -39,22 +41,37 @@ const cards = [
 ];
 
 export default function HomeDashboard() {
+  const router = useRouter();
+
   return (
-    <ScrollView
-      contentContainerStyle={styles.container}
-      showsVerticalScrollIndicator={false}
-    >
-      <StatsCapsules />
-      <View style={styles.grid}>
-        {cards.map((card) => (
-          <ChartCard key={card.title} {...card} />
-        ))}
-      </View>
-    </ScrollView>
+    <View style={styles.wrapper}>
+      <ScrollView
+        contentContainerStyle={styles.container}
+        showsVerticalScrollIndicator={false}
+      >
+        <StatsCapsules />
+        <View style={styles.grid}>
+          {cards.map((card) => (
+            <ChartCard key={card.title} {...card} />
+          ))}
+        </View>
+      </ScrollView>
+
+      <Pressable
+        accessibilityLabel="Create new invoice"
+        onPress={() => router.push("/create-invoice")}
+        style={styles.fab}
+      >
+        <Ionicons name="add" size={28} color="#fff" />
+      </Pressable>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  wrapper: {
+    flex: 1,
+  },
   container: {
     paddingVertical: 24,
     paddingHorizontal: 16,
@@ -78,5 +95,21 @@ const styles = StyleSheet.create({
   grid: {
     width: "100%",
     alignItems: "center",
+  },
+  fab: {
+    position: "absolute",
+    right: 20,
+    bottom: 24,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: "#2563eb",
+    alignItems: "center",
+    justifyContent: "center",
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOpacity: 0.18,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
   },
 });

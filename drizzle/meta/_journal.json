@@ -8,6 +8,13 @@
       "when": 1782559990843,
       "tag": "0000_tan_malice",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1782560453420,
+      "tag": "0001_zippy_roland_deschain",
+      "breakpoints": true
     }
   ]
 }

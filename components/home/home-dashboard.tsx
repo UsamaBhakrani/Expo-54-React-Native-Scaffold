@@ -1,4 +1,5 @@
 import ChartCard from "@/components/home/chart-card";
+import StatsCapsules from "@/components/home/stats-capsules";
 import React from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 
@@ -43,6 +44,7 @@ export default function HomeDashboard() {
       contentContainerStyle={styles.container}
       showsVerticalScrollIndicator={false}
     >
+      <StatsCapsules />
       <View style={styles.grid}>
         {cards.map((card) => (
           <ChartCard key={card.title} {...card} />

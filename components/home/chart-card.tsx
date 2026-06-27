@@ -143,6 +143,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 10 },
     elevation: 10,
     marginVertical: 12,
+    marginHorizontal: 8,
   },
   header: {
     flexDirection: "row",

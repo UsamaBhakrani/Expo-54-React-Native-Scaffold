@@ -3,16 +3,20 @@ import React, { useEffect, useState } from "react";
 import {
   Alert,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { getDB, runMigrations } from "@/db/config";
 import { invoices } from "@/db/schema";
+
+export const options = {
+  headerShown: false,
+};
 
 export default function CreateInvoiceScreen() {
   const router = useRouter();
@@ -27,12 +31,6 @@ export default function CreateInvoiceScreen() {
     status: "draft",
     notes: "",
   });
-
-  useEffect(() => {
-    runMigrations().catch(() => {
-      Alert.alert("Notice", "Invoice table could not be initialized yet.");
-    });
-  }, []);
 
   const handleChange = (field: keyof typeof form, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));

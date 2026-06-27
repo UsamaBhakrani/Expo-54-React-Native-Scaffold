@@ -15,6 +15,20 @@
       "when": 1782560453420,
       "tag": "0001_zippy_roland_deschain",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1782560900000,
+      "tag": "0002_create_create_pages_tables",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1782575475835,
+      "tag": "0003_classy_mandroid",
+      "breakpoints": true
     }
   ]
 }

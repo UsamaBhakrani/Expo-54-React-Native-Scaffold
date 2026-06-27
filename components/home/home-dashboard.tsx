@@ -1,9 +1,19 @@
 import ChartCard from "@/components/home/chart-card";
 import StatsCapsules from "@/components/home/stats-capsules";
+import { runMigrations } from "@/db/config";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React from "react";
-import { Pressable, ScrollView, StyleSheet, View } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import {
+  Alert,
+  Animated,
+  Easing,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 
 const cards = [
   {
@@ -40,8 +50,81 @@ const cards = [
   },
 ];
 
+const menuOptions = [
+  {
+    label: "Create Invoice",
+    icon: "document-text-outline",
+    route: "/create-invoice",
+    color: "#2563eb",
+  },
+  {
+    label: "Create Customer",
+    icon: "people-outline",
+    route: "/create-customer",
+    color: "#7c3aed",
+  },
+  {
+    label: "Create Supplier",
+    icon: "briefcase-outline",
+    route: "/create-supplier",
+    color: "#0f766e",
+  },
+  {
+    label: "Create Product",
+    icon: "cube-outline",
+    route: "/create-product",
+    color: "#f97316",
+  },
+  {
+    label: "Create Expense",
+    icon: "cash-outline",
+    route: "/create-expense",
+    color: "#dc2626",
+  },
+];
+
 export default function HomeDashboard() {
   const router = useRouter();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const overlayOpacity = useRef(new Animated.Value(0)).current;
+  const menuTranslateY = useRef(new Animated.Value(20)).current;
+  const fabRotation = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    runMigrations().catch(() => {
+      Alert.alert("Notice", "Invoice table could not be initialized yet.");
+    });
+  }, []);
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(overlayOpacity, {
+        toValue: isMenuOpen ? 1 : 0,
+        duration: 180,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: true,
+      }),
+      Animated.timing(menuTranslateY, {
+        toValue: isMenuOpen ? 0 : 20,
+        duration: 220,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: true,
+      }),
+      Animated.timing(fabRotation, {
+        toValue: isMenuOpen ? 1 : 0,
+        duration: 220,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [fabRotation, isMenuOpen, menuTranslateY, overlayOpacity]);
+
+  const toggleMenu = () => setIsMenuOpen((prev) => !prev);
+
+  const handleSelect = (route: string) => {
+    setIsMenuOpen(false);
+    router.push(route as any);
+  };
 
   return (
     <View style={styles.wrapper}>
@@ -57,12 +140,59 @@ export default function HomeDashboard() {
         </View>
       </ScrollView>
 
+      {isMenuOpen ? (
+        <Pressable
+          style={styles.overlay}
+          onPress={() => setIsMenuOpen(false)}
+        />
+      ) : null}
+
+      <Animated.View
+        pointerEvents={isMenuOpen ? "auto" : "none"}
+        style={[
+          styles.menuContainer,
+          {
+            opacity: overlayOpacity,
+            transform: [{ translateY: menuTranslateY }],
+          },
+        ]}
+      >
+        {menuOptions.map((option) => (
+          <Pressable
+            key={option.label}
+            accessibilityLabel={option.label}
+            onPress={() => handleSelect(option.route)}
+            style={styles.menuItem}
+          >
+            <View style={[styles.menuIcon, { backgroundColor: option.color }]}>
+              <Ionicons name={option.icon as never} size={18} color="#fff" />
+            </View>
+            <Text style={styles.menuText}>{option.label}</Text>
+          </Pressable>
+        ))}
+      </Animated.View>
+
       <Pressable
-        accessibilityLabel="Create new invoice"
-        onPress={() => router.push("/create-invoice")}
+        accessibilityLabel={
+          isMenuOpen ? "Close actions menu" : "Open actions menu"
+        }
+        onPress={toggleMenu}
         style={styles.fab}
       >
-        <Ionicons name="add" size={28} color="#fff" />
+        <Animated.View
+          style={{
+            transform: [
+              {
+                rotate: fabRotation.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: ["0deg", "45deg"],
+                }),
+              },
+            ],
+          }}
+        >
+          <Ionicons name="add" size={28} color="#fff" />
+        </Animated.View>
       </Pressable>
     </View>
   );
@@ -96,6 +226,46 @@ const styles = StyleSheet.create({
     width: "100%",
     alignItems: "center",
   },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(254, 254, 254, 0.47)",
+  },
+  menuContainer: {
+    position: "absolute",
+    right: 16,
+    bottom: 92,
+    width: 220,
+    padding: 10,
+    borderRadius: 16,
+    backgroundColor: "rgba(255, 255, 255, 0.96)",
+    gap: 8,
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 8,
+  },
+  menuItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+    backgroundColor: "#fff",
+  },
+  menuIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  menuText: {
+    color: "#0f172a",
+    fontSize: 15,
+    fontWeight: "600",
+  },
   fab: {
     position: "absolute",
     right: 20,
@@ -111,5 +281,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.18,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 4 },
+    zIndex: 2,
   },
 });

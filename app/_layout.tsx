@@ -11,17 +11,11 @@ import "react-native-reanimated";
 
 const db = SQLite.openDatabaseSync("app.db");
 
-import { runMigrations } from "@/db/config";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { useEffect } from "react";
 
 export default function RootLayout() {
   useDrizzleStudio(db);
   const colorScheme = useColorScheme();
-
-  useEffect(() => {
-    runMigrations();
-  }, []);
 
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>

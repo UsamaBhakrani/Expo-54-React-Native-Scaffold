@@ -11,12 +11,13 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-export const options = {
-  headerShown: false,
-};
+import { useAppEvolu } from "@/db/evolu-provider";
+
+export const options = { headerShown: false };
 
 export default function CreateSupplierScreen() {
   const router = useRouter();
+  const { insert } = useAppEvolu();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [form, setForm] = useState({
     companyName: "",
@@ -31,18 +32,30 @@ export default function CreateSupplierScreen() {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!form.companyName.trim()) {
       Alert.alert("Missing details", "Supplier company name is required.");
       return;
     }
-
     setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
+
+    try {
+      insert("supplier", {
+        companyName: form.companyName.trim(),
+        contactName: form.contactName.trim() || null,
+        email: form.email.trim() || null,
+        phone: form.phone.trim() || null,
+        address: form.address.trim() || null,
+        notes: form.notes.trim() || null,
+      });
       Alert.alert("Supplier created", "Your new supplier has been saved.");
       router.back();
-    }, 300);
+    } catch (error) {
+      console.error(error);
+      Alert.alert("Error", "Unable to save the supplier right now.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -50,7 +63,6 @@ export default function CreateSupplierScreen() {
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={styles.title}>Create supplier</Text>
         <Text style={styles.subtitle}>Add the supplier details below.</Text>
-
         <View style={styles.formGroup}>
           <Text style={styles.label}>Company name</Text>
           <TextInput
@@ -60,7 +72,6 @@ export default function CreateSupplierScreen() {
             placeholder="Northwind Supply"
           />
         </View>
-
         <View style={styles.formGroup}>
           <Text style={styles.label}>Contact name</Text>
           <TextInput
@@ -70,7 +81,6 @@ export default function CreateSupplierScreen() {
             placeholder="Alex Morgan"
           />
         </View>
-
         <View style={styles.formGroup}>
           <Text style={styles.label}>Email</Text>
           <TextInput
@@ -81,7 +91,6 @@ export default function CreateSupplierScreen() {
             keyboardType="email-address"
           />
         </View>
-
         <View style={styles.formGroup}>
           <Text style={styles.label}>Phone</Text>
           <TextInput
@@ -92,7 +101,6 @@ export default function CreateSupplierScreen() {
             keyboardType="phone-pad"
           />
         </View>
-
         <View style={styles.formGroup}>
           <Text style={styles.label}>Address</Text>
           <TextInput
@@ -102,7 +110,6 @@ export default function CreateSupplierScreen() {
             placeholder="42 Market Road"
           />
         </View>
-
         <View style={styles.formGroup}>
           <Text style={styles.label}>Notes</Text>
           <TextInput
@@ -114,7 +121,6 @@ export default function CreateSupplierScreen() {
             numberOfLines={4}
           />
         </View>
-
         <Pressable
           style={styles.button}
           onPress={handleSubmit}
@@ -130,55 +136,20 @@ export default function CreateSupplierScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "#f8fafc",
-  },
-  container: {
-    padding: 20,
-    paddingBottom: 40,
-    gap: 12,
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#0f172a",
-  },
-  subtitle: {
-    fontSize: 15,
-    color: "#475569",
-    marginBottom: 8,
-  },
-  formGroup: {
-    gap: 6,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#334155",
-  },
+  safeArea: { flex: 1, backgroundColor: "#f8fafc" },
+  container: { padding: 20, paddingBottom: 40, gap: 12 },
+  title: { fontSize: 28, fontWeight: "700", color: "#0f172a" },
+  subtitle: { fontSize: 15, color: "#475569", marginBottom: 8 },
+  formGroup: { gap: 6 },
+  label: { fontSize: 14, fontWeight: "600", color: "#334155" },
   input: {
-    borderWidth: 1,
-    borderColor: "#cbd5e1",
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    backgroundColor: "#fff",
+    borderWidth: 1, borderColor: "#cbd5e1", borderRadius: 12,
+    paddingHorizontal: 12, paddingVertical: 10, backgroundColor: "#fff",
   },
-  textArea: {
-    minHeight: 100,
-    textAlignVertical: "top",
-  },
+  textArea: { minHeight: 100, textAlignVertical: "top" },
   button: {
-    marginTop: 8,
-    backgroundColor: "#0f766e",
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: "center",
+    marginTop: 8, backgroundColor: "#0f766e", borderRadius: 12,
+    paddingVertical: 14, alignItems: "center",
   },
-  buttonText: {
-    color: "#fff",
-    fontWeight: "700",
-    fontSize: 16,
-  },
+  buttonText: { color: "#fff", fontWeight: "700", fontSize: 16 },
 });

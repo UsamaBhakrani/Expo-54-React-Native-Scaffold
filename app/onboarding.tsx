@@ -1,26 +1,43 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useState } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { useCallback, useRef, useState } from "react";
+import {
+  Animated,
+  Dimensions,
+  Easing,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { ThemedText } from "@/components/themed-text";
-import { ThemedView } from "@/components/themed-view";
+const { width } = Dimensions.get("window");
 
 const steps = [
   {
+    icon: "wallet-outline",
+    color: "#2563eb",
+    bgColor: "#eff6ff",
     title: "Welcome to MyApp",
     description:
-      "Start with a quick tour to learn how to manage your ledgers, suppliers, and expenses.",
+      "Your personal accounting companion. Manage ledgers, track suppliers, and stay on top of your finances.",
   },
   {
+    icon: "book-outline",
+    color: "#7c3aed",
+    bgColor: "#f5f3ff",
     title: "Organize Your Ledger",
     description:
-      "Keep your financial entries tidy and easy to review with a clean ledger experience.",
+      "Keep your financial entries tidy and easy to review with a clean, intuitive ledger experience.",
   },
   {
-    title: "Manage Suppliers & Expenses",
+    icon: "people-outline",
+    color: "#0f766e",
+    bgColor: "#f0fdf4",
+    title: "Manage Everything",
     description:
-      "Track supplier relationships and expenses in one place so you stay in control.",
+      "Track supplier relationships, create invoices, record expenses, and manage products — all in one place.",
   },
 ];
 
@@ -29,24 +46,89 @@ export default function OnboardingScreen() {
   const router = useRouter();
   const isLastStep = step === steps.length - 1;
 
+  const slideAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+
+  const animateTo = useCallback(
+    (direction: 1 | -1) => {
+      // Fade out and slide current
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 0,
+          duration: 120,
+          useNativeDriver: true,
+        }),
+        Animated.timing(slideAnim, {
+          toValue: direction * -30,
+          duration: 120,
+          easing: Easing.out(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        setStep((current) => current + direction);
+        slideAnim.setValue(direction * 30);
+        Animated.parallel([
+          Animated.timing(fadeAnim, {
+            toValue: 1,
+            duration: 180,
+            useNativeDriver: true,
+          }),
+          Animated.timing(slideAnim, {
+            toValue: 0,
+            duration: 180,
+            easing: Easing.out(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ]).start();
+      });
+    },
+    [fadeAnim, slideAnim],
+  );
+
   const handleNext = () => {
     if (isLastStep) {
       router.replace("/auth");
       return;
     }
-
-    setStep((current) => current + 1);
+    animateTo(1);
   };
+
+  const handleSkip = () => {
+    router.replace("/auth");
+  };
+
+  const current = steps[step];
 
   return (
     <SafeAreaView style={styles.container}>
-      <ThemedView style={styles.card}>
-        <ThemedText type="title" style={styles.title}>
-          {steps[step].title}
-        </ThemedText>
-        <ThemedText style={styles.description}>
-          {steps[step].description}
-        </ThemedText>
+      {/* Skip button */}
+      {!isLastStep && (
+        <Pressable onPress={handleSkip} style={styles.skipButton}>
+          <Text style={styles.skipText}>Skip</Text>
+        </Pressable>
+      )}
+
+      {/* Content */}
+      <Animated.View
+        style={[
+          styles.content,
+          {
+            opacity: fadeAnim,
+            transform: [{ translateX: slideAnim }],
+          },
+        ]}
+      >
+        <View style={[styles.iconContainer, { backgroundColor: current.bgColor }]}>
+          <Ionicons name={current.icon as any} size={48} color={current.color} />
+        </View>
+
+        <Text style={styles.title}>{current.title}</Text>
+        <Text style={styles.description}>{current.description}</Text>
+      </Animated.View>
+
+      {/* Bottom section */}
+      <View style={styles.bottom}>
+        {/* Dot indicators */}
         <View style={styles.indicatorRow}>
           {steps.map((_, index) => (
             <View
@@ -54,24 +136,33 @@ export default function OnboardingScreen() {
               style={[
                 styles.indicator,
                 index === step
-                  ? styles.indicatorActive
+                  ? [styles.indicatorActive, { backgroundColor: current.color }]
                   : styles.indicatorInactive,
               ]}
             />
           ))}
         </View>
+
+        {/* Next / Get Started button */}
         <Pressable
           onPress={handleNext}
           style={({ pressed }) => [
             styles.button,
+            { backgroundColor: current.color },
             pressed && styles.buttonPressed,
           ]}
         >
-          <ThemedText type="defaultSemiBold" style={styles.buttonText}>
+          <Text style={styles.buttonText}>
             {isLastStep ? "Get Started" : "Next"}
-          </ThemedText>
+          </Text>
+          <Ionicons
+            name={isLastStep ? "checkmark-circle" : "arrow-forward"}
+            size={20}
+            color="#fff"
+            style={styles.buttonIcon}
+          />
         </Pressable>
-      </ThemedView>
+      </View>
     </SafeAreaView>
   );
 }
@@ -79,55 +170,101 @@ export default function OnboardingScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center",
-    padding: 24,
+    backgroundColor: "#f8fafc",
   },
-  card: {
-    borderRadius: 24,
-    padding: 28,
-    gap: 24,
-    backgroundColor: "rgba(255,255,255,0.92)",
+  skipButton: {
+    position: "absolute",
+    top: 16,
+    right: 20,
+    zIndex: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  skipText: {
+    fontSize: 15,
+    color: "#94a3b8",
+    fontWeight: "600",
+  },
+  content: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 36,
+    gap: 20,
+  },
+  iconContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 8,
     shadowColor: "#000",
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
   },
   title: {
-    fontSize: 32,
-    lineHeight: 40,
+    fontSize: 30,
+    fontWeight: "800",
+    color: "#0f172a",
+    textAlign: "center",
+    lineHeight: 38,
   },
   description: {
-    fontSize: 18,
-    lineHeight: 28,
+    fontSize: 17,
+    lineHeight: 26,
+    color: "#475569",
+    textAlign: "center",
+    paddingHorizontal: 8,
+  },
+  bottom: {
+    paddingHorizontal: 28,
+    paddingBottom: 40,
+    gap: 28,
+    alignItems: "center",
   },
   indicatorRow: {
     flexDirection: "row",
-    justifyContent: "center",
     gap: 10,
   },
   indicator: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
   },
   indicatorActive: {
-    backgroundColor: "#2563eb",
+    width: 28,
+    borderRadius: 5,
   },
   indicatorInactive: {
     backgroundColor: "#cbd5e1",
   },
   button: {
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
+    width: "100%",
     paddingVertical: 16,
-    borderRadius: 18,
-    backgroundColor: "#2563eb",
+    borderRadius: 16,
+    gap: 8,
+    shadowColor: "#000",
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
   },
   buttonPressed: {
-    opacity: 0.8,
+    opacity: 0.85,
+    transform: [{ scale: 0.97 }],
   },
   buttonText: {
-    color: "#ffffff",
-    fontSize: 16,
+    color: "#fff",
+    fontSize: 17,
+    fontWeight: "700",
+  },
+  buttonIcon: {
+    marginTop: 1,
   },
 });

@@ -8,7 +8,6 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import TabAnimatedView from "@/components/ui/tab-animated-view";
 import { useTabDirection } from "@/components/ui/tab-direction";
-import { runMigrations } from "@/db/config";
 
 export default function HomeScreen() {
   const isFocused = useIsFocused();
@@ -17,12 +16,6 @@ export default function HomeScreen() {
   useEffect(() => {
     if (isFocused) setIndex(0);
   }, [isFocused, setIndex]);
-
-  useEffect(() => {
-    runMigrations().catch((err) => {
-      console.error("Error running migrations:", err);
-    });
-  }, []);
 
   return (
     <SafeAreaView style={styles.safeArea}>

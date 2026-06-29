@@ -1,11 +1,9 @@
 import ChartCard from "@/components/home/chart-card";
 import StatsCapsules from "@/components/home/stats-capsules";
-import { runMigrations } from "@/db/config";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
 import {
-  Alert,
   Animated,
   Easing,
   Pressable,
@@ -81,6 +79,12 @@ const menuOptions = [
     route: "/create-expense",
     color: "#dc2626",
   },
+  {
+    label: "Create Purchase",
+    icon: "cart-outline",
+    route: "/create-purchase",
+    color: "#0891b2",
+  },
 ];
 
 export default function HomeDashboard() {
@@ -90,11 +94,7 @@ export default function HomeDashboard() {
   const menuTranslateY = useRef(new Animated.Value(20)).current;
   const fabRotation = useRef(new Animated.Value(0)).current;
 
-  useEffect(() => {
-    runMigrations().catch(() => {
-      Alert.alert("Notice", "Invoice table could not be initialized yet.");
-    });
-  }, []);
+
 
   useEffect(() => {
     Animated.parallel([

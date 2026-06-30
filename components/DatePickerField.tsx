@@ -61,7 +61,6 @@ export default function DatePickerField({
         <Text style={[styles.pickerText, !value && styles.placeholder]}>
           {displayValue}
         </Text>
-        <Text style={styles.icon}>📅</Text>
       </Pressable>
 
       {Platform.OS === "ios" ? (
@@ -105,22 +104,22 @@ export default function DatePickerField({
 }
 
 const styles = StyleSheet.create({
-  container: { gap: 6 },
-  label: { fontSize: 14, fontWeight: "600", color: "#334155" },
+  container: { gap: 4 },
+  label: { fontSize: 13, fontWeight: "600", color: "#334155" },
   pickerButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     borderWidth: 1,
     borderColor: "#cbd5e1",
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
     backgroundColor: "#fff",
   },
-  pickerText: { fontSize: 15, color: "#0f172a", flex: 1 },
+  pickerText: { fontSize: 14, color: "#0f172a", flex: 1 },
   placeholder: { color: "#94a3b8" },
-  icon: { fontSize: 16, marginLeft: 8 },
+
   overlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.3)",

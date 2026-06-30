@@ -1,12 +1,13 @@
 import {
   DarkTheme,
   DefaultTheme,
-  ThemeProvider,
+  ThemeProvider as NavThemeProvider,
 } from "@react-navigation/native";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
 
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import { initDatabase } from "@/db/index";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useDrizzleStudio } from "expo-drizzle-studio-plugin";
@@ -18,10 +19,20 @@ export default function RootLayout() {
   useDrizzleStudio(sqliteDb);
   initDatabase();
 
+  return (
+    <ThemeProvider>
+      <InnerRoot />
+    </ThemeProvider>
+  );
+}
+
+function InnerRoot() {
   const colorScheme = useColorScheme();
 
   return (
-    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+    <NavThemeProvider
+      value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
+    >
       <Stack initialRouteName="onboarding">
         <Stack.Screen name="onboarding" options={{ headerShown: false }} />
         <Stack.Screen name="auth" options={{ headerShown: false }} />
@@ -31,10 +42,7 @@ export default function RootLayout() {
         <Stack.Screen name="create-expense" options={{ headerShown: false }} />
         <Stack.Screen name="create-supplier" options={{ headerShown: false }} />
         <Stack.Screen name="create-product" options={{ headerShown: false }} />
-        <Stack.Screen
-          name="supplier-ledger"
-          options={{ headerShown: false }}
-        />{" "}
+        <Stack.Screen name="supplier-ledger" options={{ headerShown: false }} />
         <Stack.Screen name="create-purchase" options={{ headerShown: false }} />
         <Stack.Screen name="expense-detail" options={{ headerShown: false }} />
         <Stack.Screen
@@ -43,6 +51,6 @@ export default function RootLayout() {
         />
       </Stack>
       <StatusBar style="auto" />
-    </ThemeProvider>
+    </NavThemeProvider>
   );
 }

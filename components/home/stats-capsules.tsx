@@ -57,14 +57,15 @@ const styles = StyleSheet.create({
   },
   container: {
     flexDirection: "row",
+    flexWrap: "wrap",
     gap: 12,
   },
   capsule: {
-    paddingVertical: 12,
-    paddingHorizontal: 14,
+    width: "48%",
+    paddingVertical: 14,
+    paddingHorizontal: 16,
     borderRadius: 12,
     borderLeftWidth: 4,
-    minWidth: 140,
     justifyContent: "center",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },

@@ -93,6 +93,19 @@ export function initDatabase() {
   `);
 }
 
+// Drop all data (for purge button)
+export function purgeDatabase() {
+  const sdb = getSqliteDb();
+  sdb.execSync(`
+    DELETE FROM customer;
+    DELETE FROM supplier;
+    DELETE FROM product;
+    DELETE FROM invoice;
+    DELETE FROM expense;
+    DELETE FROM supplier_transaction;
+  `);
+}
+
 // ---- Customer CRUD ----
 
 export type NewCustomer = typeof customers.$inferInsert;

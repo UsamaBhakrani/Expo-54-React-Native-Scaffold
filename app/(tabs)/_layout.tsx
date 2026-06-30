@@ -32,19 +32,6 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
-          name="ledgers"
-          options={{
-            title: "Ledgers",
-            tabBarIcon: ({ color }) => (
-              <IconSymbol
-                size={28}
-                name="list.bullet.rectangle.portrait.fill"
-                color={color}
-              />
-            ),
-          }}
-        />
-        <Tabs.Screen
           name="suppliers"
           options={{
             title: "Suppliers",
@@ -67,12 +54,31 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
+          name="customers"
+          options={{
+            title: "Customers",
+            tabBarIcon: ({ color }) => (
+              <IconSymbol
+                size={28}
+                name="person.crop.circle.fill"
+                color={color}
+              />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="products"
+          options={{
+            title: "Products",
+            tabBarIcon: ({ color }) => (
+              <IconSymbol size={28} name="shippingbox.fill" color={color} />
+            ),
+          }}
+        />
+        <Tabs.Screen
           name="settings"
           options={{
-            title: "Settings",
-            tabBarIcon: ({ color }) => (
-              <IconSymbol size={28} name="gearshape.fill" color={color} />
-            ),
+            href: null, // hidden from tab bar, accessible via navigation
           }}
         />
       </Tabs>

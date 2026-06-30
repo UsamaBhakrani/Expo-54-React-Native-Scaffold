@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   Alert,
   Pressable,
@@ -12,22 +12,15 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import PickerModal from "@/components/ui/picker-modal";
-import { evolu, useAppEvolu } from "@/db/evolu-provider";
-
-import * as Evolu from "@evolu/common";
-import { useQuery } from "@evolu/react";
+import type { PickerItem } from "@/components/ui/picker-modal";
+import { getAllSuppliers, insertProduct, type Supplier } from "@/db/index";
 
 export const options = { headerShown: false };
 
-const supplierQuery = evolu.createQuery((db) =>
-  db.selectFrom("supplier").select(["id", "companyName"]).where("isDeleted", "is not", Evolu.sqliteTrue),
-);
-
 export default function CreateProductScreen() {
   const router = useRouter();
-  const { insert } = useAppEvolu();
-  const supplierList = useQuery(supplierQuery);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [supplierOptions, setSupplierOptions] = useState<PickerItem[]>([]);
   const [showSupplierPicker, setShowSupplierPicker] = useState(false);
   const [form, setForm] = useState({
     name: "",
@@ -38,33 +31,44 @@ export default function CreateProductScreen() {
     notes: "",
   });
 
+  const loadSuppliers = useCallback(() => {
+    getAllSuppliers().then((suppliers: Supplier[]) =>
+      setSupplierOptions(
+        suppliers.map((s) => ({
+          id: String(s.id),
+          label: s.companyName,
+          subtitle: s.contactName ?? undefined,
+        })),
+      ),
+    );
+  }, []);
+
+  useEffect(() => {
+    loadSuppliers();
+  }, [loadSuppliers]);
+
   const handleChange = (field: keyof typeof form, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const suppliers = (supplierList as unknown as { id: string; companyName: string }[]) || [];
-
-  const selectedSupplier = suppliers.find((s) => s.id === form.supplierId);
-
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!form.name.trim()) {
       Alert.alert("Missing details", "Product name is required.");
       return;
     }
     setIsSubmitting(true);
     try {
-      insert("product", {
+      await insertProduct({
         name: form.name.trim(),
         sku: form.sku.trim() || null,
         price: form.price ? Number(form.price) : null,
         stock: form.stock ? Number(form.stock) : null,
-        supplierId: form.supplierId || null,
+        supplierId: form.supplierId ? Number(form.supplierId) : null,
         notes: form.notes.trim() || null,
       });
       Alert.alert("Product created", "Your new product has been saved.");
       router.back();
-    } catch (error) {
-      console.error(error);
+    } catch {
       Alert.alert("Error", "Unable to save the product right now.");
     } finally {
       setIsSubmitting(false);
@@ -75,13 +79,13 @@ export default function CreateProductScreen() {
     <SafeAreaView style={styles.safeArea}>
       <PickerModal
         visible={showSupplierPicker}
-        data={suppliers.map((s) => ({ id: s.id, label: s.companyName }))}
+        data={supplierOptions}
         selectedId={form.supplierId}
         onSelect={(item) => {
           handleChange("supplierId", item.id);
           setShowSupplierPicker(false);
         }}
-        onClose={() => setShowSupplierPicker(false)}
+        onClose={() => { setShowSupplierPicker(false); loadSuppliers(); }}
         title="Select Supplier"
         emptyText="No suppliers found. Create one first."
       />
@@ -109,8 +113,8 @@ export default function CreateProductScreen() {
         <View style={styles.formGroup}>
           <Text style={styles.label}>Supplier</Text>
           <Pressable style={styles.pickerButton} onPress={() => setShowSupplierPicker(true)}>
-            <Text style={[styles.pickerButtonText, !selectedSupplier && styles.pickerPlaceholder]}>
-              {selectedSupplier ? selectedSupplier.companyName : "Select a supplier"}
+            <Text style={[styles.pickerButtonText, !form.supplierId && styles.pickerPlaceholder]}>
+              {form.supplierId ? "Selected supplier" : "Select a supplier"}
             </Text>
             <Text style={styles.pickerArrow}>▼</Text>
           </Pressable>

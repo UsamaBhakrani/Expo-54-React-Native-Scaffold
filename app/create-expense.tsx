@@ -11,19 +11,19 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { useAppEvolu } from "@/db/evolu-provider";
+import DatePickerField from "@/components/DatePickerField";
+import { insertExpense } from "@/db/index";
 
 export const options = { headerShown: false };
 
 export default function CreateExpenseScreen() {
   const router = useRouter();
-  const { insert } = useAppEvolu();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [form, setForm] = useState({
     title: "",
     category: "",
     amount: "",
-    expenseDate: "",
+    expenseDate: new Date().toISOString().slice(0, 10),
     notes: "",
   });
 
@@ -31,25 +31,23 @@ export default function CreateExpenseScreen() {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!form.title.trim() || !form.amount.trim()) {
       Alert.alert("Missing details", "Expense title and amount are required.");
       return;
     }
     setIsSubmitting(true);
-
     try {
-      insert("expense", {
+      await insertExpense({
         title: form.title.trim(),
         category: form.category.trim() || null,
         amount: Number(form.amount),
-        expenseDate: form.expenseDate.trim() || new Date().toISOString().slice(0, 10) || null,
+        expenseDate: form.expenseDate.trim() || null,
         notes: form.notes.trim() || null,
       });
       Alert.alert("Expense created", "Your new expense has been saved.");
       router.back();
-    } catch (error) {
-      console.error(error);
+    } catch {
       Alert.alert("Error", "Unable to save the expense right now.");
     } finally {
       setIsSubmitting(false);
@@ -75,8 +73,11 @@ export default function CreateExpenseScreen() {
             <TextInput style={styles.input} value={form.amount} onChangeText={(v) => handleChange("amount", v)} placeholder="0.00" keyboardType="decimal-pad" />
           </View>
           <View style={[styles.formGroup, styles.flexHalf]}>
-            <Text style={styles.label}>Date</Text>
-            <TextInput style={styles.input} value={form.expenseDate} onChangeText={(v) => handleChange("expenseDate", v)} placeholder="YYYY-MM-DD" />
+            <DatePickerField
+              label="Date"
+              value={form.expenseDate}
+              onChange={(v) => handleChange("expenseDate", v)}
+            />
           </View>
         </View>
         <View style={styles.formGroup}>

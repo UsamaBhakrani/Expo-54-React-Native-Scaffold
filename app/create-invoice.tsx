@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   Alert,
   Pressable,
@@ -11,59 +11,53 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import DatePickerField from "@/components/DatePickerField";
 import PickerModal from "@/components/ui/picker-modal";
-import { evolu, useAppEvolu } from "@/db/evolu-provider";
-
-import * as Evolu from "@evolu/common";
-import { useQuery } from "@evolu/react";
+import type { PickerItem } from "@/components/ui/picker-modal";
+import { getAllCustomers, insertInvoice, type Customer } from "@/db/index";
 
 export const options = { headerShown: false };
 
-const customerQuery = evolu.createQuery((db) =>
-  db
-    .selectFrom("customer")
-    .select(["id", "name", "email"])
-    .where("isDeleted", "is not", Evolu.sqliteTrue),
-);
+const today = new Date().toISOString().slice(0, 10);
 
 export default function CreateInvoiceScreen() {
   const router = useRouter();
-  const { insert } = useAppEvolu();
-  const customerList = useQuery(customerQuery);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [customerOptions, setCustomerOptions] = useState<PickerItem[]>([]);
   const [showCustomerPicker, setShowCustomerPicker] = useState(false);
   const [form, setForm] = useState({
     invoiceNumber: "",
     customerId: "",
     customerName: "",
     customerEmail: "",
-    issueDate: "",
-    dueDate: "",
+    issueDate: today,
+    dueDate: today,
     amount: "",
     status: "draft",
     notes: "",
   });
 
+  const loadCustomers = useCallback(() => {
+    getAllCustomers().then((customers: Customer[]) =>
+      setCustomerOptions(
+        customers.map((c) => ({
+          id: String(c.id),
+          label: c.name,
+          subtitle: c.email ?? undefined,
+        })),
+      ),
+    );
+  }, []);
+
+  useEffect(() => {
+    loadCustomers();
+  }, [loadCustomers]);
+
   const handleChange = (field: keyof typeof form, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
-  const customers = (customerList as unknown as { id: string; name: string; email: string | null }[]) || [];
-
-  const selectCustomer = (item: { id: string; label: string; subtitle?: string }) => {
-    const customer = customers.find((c) => c.id === item.id);
-    if (customer) {
-      setForm((prev) => ({
-        ...prev,
-        customerId: customer.id,
-        customerName: customer.name,
-        customerEmail: customer.email || "",
-      }));
-    }
-    setShowCustomerPicker(false);
-  };
-
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const { invoiceNumber, customerName, amount } = form;
     if (!invoiceNumber.trim() || !customerName.trim() || !amount.trim()) {
       Alert.alert("Missing details", "Invoice number, customer name, and amount are required.");
@@ -71,10 +65,10 @@ export default function CreateInvoiceScreen() {
     }
     setIsSubmitting(true);
     try {
-      insert("invoice", {
-        invoiceNumber: invoiceNumber.trim(),
-        customerId: form.customerId || null,
-        customerName: customerName.trim(),
+      await insertInvoice({
+        invoiceNumber: form.invoiceNumber.trim(),
+        customerId: form.customerId ? Number(form.customerId) : null,
+        customerName: form.customerName.trim(),
         customerEmail: form.customerEmail.trim() || null,
         issueDate: form.issueDate.trim() || new Date().toISOString().slice(0, 10),
         dueDate: form.dueDate.trim() || new Date().toISOString().slice(0, 10),
@@ -84,8 +78,7 @@ export default function CreateInvoiceScreen() {
       });
       Alert.alert("Invoice created", "Your new invoice has been saved.");
       router.back();
-    } catch (error) {
-      console.error(error);
+    } catch {
       Alert.alert("Error", "Unable to save the invoice right now.");
     } finally {
       setIsSubmitting(false);
@@ -96,10 +89,18 @@ export default function CreateInvoiceScreen() {
     <SafeAreaView style={styles.safeArea}>
       <PickerModal
         visible={showCustomerPicker}
-        data={customers.map((c) => ({ id: c.id, label: c.name, subtitle: c.email || undefined }))}
+        data={customerOptions}
         selectedId={form.customerId}
-        onSelect={selectCustomer}
-        onClose={() => setShowCustomerPicker(false)}
+        onSelect={(item) => {
+          handleChange("customerId", item.id);
+          // Auto-fill customer details
+          const customer = customerOptions.find((c) => c.id === item.id);
+          if (customer) {
+            handleChange("customerName", customer.label);
+          }
+          setShowCustomerPicker(false);
+        }}
+        onClose={() => { setShowCustomerPicker(false); loadCustomers(); }}
         title="Select Customer"
         emptyText="No customers found. Create one first."
       />
@@ -129,12 +130,18 @@ export default function CreateInvoiceScreen() {
         </View>
         <View style={styles.inlineRow}>
           <View style={[styles.formGroup, styles.flexHalf]}>
-            <Text style={styles.label}>Issue date</Text>
-            <TextInput style={styles.input} value={form.issueDate} onChangeText={(v) => handleChange("issueDate", v)} placeholder="YYYY-MM-DD" />
+            <DatePickerField
+              label="Issue date"
+              value={form.issueDate}
+              onChange={(v) => handleChange("issueDate", v)}
+            />
           </View>
           <View style={[styles.formGroup, styles.flexHalf]}>
-            <Text style={styles.label}>Due date</Text>
-            <TextInput style={styles.input} value={form.dueDate} onChangeText={(v) => handleChange("dueDate", v)} placeholder="YYYY-MM-DD" />
+            <DatePickerField
+              label="Due date"
+              value={form.dueDate}
+              onChange={(v) => handleChange("dueDate", v)}
+            />
           </View>
         </View>
         <View style={styles.inlineRow}>

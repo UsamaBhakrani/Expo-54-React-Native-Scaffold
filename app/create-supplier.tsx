@@ -11,13 +11,12 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { useAppEvolu } from "@/db/evolu-provider";
+import { insertSupplier } from "@/db/index";
 
 export const options = { headerShown: false };
 
 export default function CreateSupplierScreen() {
   const router = useRouter();
-  const { insert } = useAppEvolu();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [form, setForm] = useState({
     companyName: "",
@@ -38,9 +37,8 @@ export default function CreateSupplierScreen() {
       return;
     }
     setIsSubmitting(true);
-
     try {
-      insert("supplier", {
+      await insertSupplier({
         companyName: form.companyName.trim(),
         contactName: form.contactName.trim() || null,
         email: form.email.trim() || null,
@@ -50,8 +48,7 @@ export default function CreateSupplierScreen() {
       });
       Alert.alert("Supplier created", "Your new supplier has been saved.");
       router.back();
-    } catch (error) {
-      console.error(error);
+    } catch {
       Alert.alert("Error", "Unable to save the supplier right now.");
     } finally {
       setIsSubmitting(false);

@@ -8,36 +8,25 @@ export type StatsCapsule = {
   color: string;
 };
 
-const CAPSULES_DATA: StatsCapsule[] = [
-  {
-    title: "Cashflow",
-    value: "$12.4K",
-    color: "#0ea5e9",
-  },
-  {
-    title: "Expenses",
-    value: "$18.8K",
-    color: "#7c3aed",
-  },
-  {
-    title: "Payments",
-    value: "$5.8K",
-    color: "#22c55e",
-  },
-  {
-    title: "Stock",
-    value: "1.2K units",
-    color: "#f97316",
-  },
+type Props = {
+  data?: StatsCapsule[];
+};
+
+const FALLBACK_DATA: StatsCapsule[] = [
+  { title: "Suppliers", value: "0", color: "#0f766e" },
+  { title: "Customers", value: "0", color: "#7c3aed" },
+  { title: "Expenses", value: "$0", color: "#dc2626" },
+  { title: "Invoices", value: "0", color: "#2563eb" },
 ];
 
-export default function StatsCapsules() {
+export default function StatsCapsules({ data }: Props) {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
+  const capsules = data ?? FALLBACK_DATA;
 
   return (
     <View style={styles.container}>
-      {CAPSULES_DATA.map((capsule) => (
+      {capsules.map((capsule) => (
         <View
           key={capsule.title}
           style={[

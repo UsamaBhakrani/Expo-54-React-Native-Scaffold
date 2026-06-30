@@ -1,8 +1,9 @@
 import ChartCard from "@/components/home/chart-card";
 import StatsCapsules from "@/components/home/stats-capsules";
+import type { StatsCapsule } from "@/components/home/stats-capsules";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   Animated,
   Easing,
@@ -12,6 +13,13 @@ import {
   Text,
   View,
 } from "react-native";
+
+import {
+  getAllSuppliers,
+  getAllCustomers,
+  getAllExpenses,
+  getAllInvoices,
+} from "@/db/index";
 
 const cards = [
   {
@@ -90,11 +98,47 @@ const menuOptions = [
 export default function HomeDashboard() {
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [capsules, setCapsules] = useState<StatsCapsule[]>([]);
   const overlayOpacity = useRef(new Animated.Value(0)).current;
   const menuTranslateY = useRef(new Animated.Value(20)).current;
   const fabRotation = useRef(new Animated.Value(0)).current;
 
+  const loadStats = useCallback(() => {
+    Promise.all([
+      getAllSuppliers(),
+      getAllCustomers(),
+      getAllExpenses(),
+      getAllInvoices(),
+    ]).then(([suppliers, customers, expenses, invoices]) => {
+      const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
+      setCapsules([
+        {
+          title: "Suppliers",
+          value: String(suppliers.length),
+          color: "#0f766e",
+        },
+        {
+          title: "Customers",
+          value: String(customers.length),
+          color: "#7c3aed",
+        },
+        {
+          title: "Expenses",
+          value: `$${totalExpenses.toLocaleString(undefined, { minimumFractionDigits: 0 })}`,
+          color: "#dc2626",
+        },
+        {
+          title: "Invoices",
+          value: String(invoices.length),
+          color: "#2563eb",
+        },
+      ]);
+    });
+  }, []);
 
+  useEffect(() => {
+    loadStats();
+  }, [loadStats]);
 
   useEffect(() => {
     Animated.parallel([
@@ -132,7 +176,7 @@ export default function HomeDashboard() {
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}
       >
-        <StatsCapsules />
+        <StatsCapsules data={capsules.length > 0 ? capsules : undefined} />
         <View style={styles.grid}>
           {cards.map((card) => (
             <ChartCard key={card.title} {...card} />

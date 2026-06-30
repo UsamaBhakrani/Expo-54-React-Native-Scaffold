@@ -1,0 +1,1 @@
+ALTER TABLE `supplier_transaction` ADD `purchase_number` text;

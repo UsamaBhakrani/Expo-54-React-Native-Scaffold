@@ -16,6 +16,8 @@ import {
   Svg,
 } from "react-native-svg";
 
+import { uberColors, uberRounded, uberSpacing, uberTypography } from "@/constants/theme";
+
 export type ChartCardProps = {
   title: string;
   subtitle: string;
@@ -87,23 +89,17 @@ export default function ChartCard({
         <Svg width={CARD_WIDTH} height={CHART_HEIGHT}>
           <Defs>
             <LinearGradient id="gradient" x1="0" y1="0" x2="0" y2="1">
-              <Stop offset="0%" stopColor={color} stopOpacity="0.35" />
-              <Stop offset="100%" stopColor={color} stopOpacity="0.03" />
+              <Stop offset="0%" stopColor={uberColors.canvas} stopOpacity="0.25" />
+              <Stop offset="100%" stopColor={uberColors.canvas} stopOpacity="0.02" />
             </LinearGradient>
           </Defs>
-          <Rect
-            x="0"
-            y="0"
-            width={CARD_WIDTH}
-            height={CHART_HEIGHT}
-            fill="transparent"
-          />
+          <Rect x="0" y="0" width={CARD_WIDTH} height={CHART_HEIGHT} fill="transparent" />
           <Path d={area} fill="url(#gradient)" />
           <Path
             d={line}
             fill="none"
-            stroke={color}
-            strokeWidth="3"
+            stroke={uberColors.canvas}
+            strokeWidth="2.5"
             strokeLinecap="round"
           />
           {points.map((point, index) => (
@@ -111,18 +107,16 @@ export default function ChartCard({
               key={index}
               cx={point.x}
               cy={point.y}
-              r={index === activeIndex ? 6 : 4}
-              fill={index === activeIndex ? "#fff" : color}
-              stroke={color}
+              r={index === activeIndex ? 5 : 3}
+              fill={index === activeIndex ? uberColors.primary : uberColors.canvas}
+              stroke={uberColors.canvas}
               strokeWidth={index === activeIndex ? 2 : 1}
             />
           ))}
         </Svg>
         <View style={styles.tipRow}>
           <Text style={styles.caption}>{caption}</Text>
-          <Text style={styles.activeValue}>
-            ${data[activeIndex].toFixed(2)}
-          </Text>
+          <Text style={styles.activeValue}>${data[activeIndex].toFixed(2)}</Text>
         </View>
       </View>
     </Pressable>
@@ -132,54 +126,52 @@ export default function ChartCard({
 const styles = StyleSheet.create({
   card: {
     width: CARD_WIDTH,
-    padding: 20,
-    borderRadius: 42,
-    backgroundColor: "#111827",
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.08)",
-    shadowColor: "#000",
-    shadowOpacity: 0.16,
-    shadowRadius: 24,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 10,
-    marginVertical: 12,
-    marginHorizontal: 8,
+    padding: uberSpacing["2xl"],
+    borderRadius: uberRounded.xl,
+    backgroundColor: uberColors.primary,
+    marginVertical: uberSpacing.md,
+    marginHorizontal: uberSpacing.sm,
   },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    gap: 16,
+    gap: uberSpacing.lg,
   },
   title: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#fff",
+    fontSize: uberTypography.displayMd.fontSize,
+    fontWeight: uberTypography.displayMd.fontWeight,
+    color: uberColors.onDark,
+    fontFamily: uberTypography.displayMd.fontFamily,
   },
   subtitle: {
-    marginTop: 4,
-    fontSize: 14,
-    color: "#a5b4fc",
+    marginTop: uberSpacing.xxs,
+    fontSize: uberTypography.bodySm.fontSize,
+    color: uberColors.mute,
+    fontFamily: uberTypography.bodySm.fontFamily,
   },
   value: {
-    fontSize: 24,
-    fontWeight: "800",
-    color: "#fff",
+    fontSize: uberTypography.displayMd.fontSize,
+    fontWeight: uberTypography.displayMd.fontWeight,
+    color: uberColors.onDark,
+    fontFamily: uberTypography.displayMd.fontFamily,
   },
   chartContainer: {
-    marginTop: 10,
+    marginTop: uberSpacing.sm,
   },
   tipRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: 14,
+    marginTop: uberSpacing.md,
   },
   caption: {
-    color: "#cbd5e1",
-    fontSize: 13,
+    color: uberColors.mute,
+    fontSize: uberTypography.caption.fontSize,
+    fontFamily: uberTypography.caption.fontFamily,
   },
   activeValue: {
-    color: "#fff",
+    color: uberColors.onDark,
     fontWeight: "700",
+    fontFamily: uberTypography.bodyMdStrong.fontFamily,
   },
 });

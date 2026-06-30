@@ -8,6 +8,13 @@
       "when": 1782819952980,
       "tag": "0000_little_living_tribunal",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1782833112966,
+      "tag": "0001_cool_piledriver",
+      "breakpoints": true
     }
   ]
 }

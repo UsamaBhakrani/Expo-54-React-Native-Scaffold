@@ -1,6 +1,7 @@
 import ChartCard from "@/components/home/chart-card";
-import StatsCapsules from "@/components/home/stats-capsules";
 import type { StatsCapsule } from "@/components/home/stats-capsules";
+import StatsCapsules from "@/components/home/stats-capsules";
+import { SkeletonCard } from "@/components/ui/uber-skeleton";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -16,10 +17,17 @@ import {
 } from "react-native";
 
 import {
-  getAllSuppliers,
+  uberColors,
+  uberRounded,
+  uberShadows,
+  uberSpacing,
+  uberTypography,
+} from "@/constants/theme";
+import {
   getAllCustomers,
   getAllExpenses,
   getAllInvoices,
+  getAllSuppliers,
 } from "@/db/index";
 
 const CHART_MODES = [
@@ -27,31 +35,22 @@ const CHART_MODES = [
     id: "Expenses",
     label: "Expenses",
     icon: "trending-down",
-    color: "#7c3aed",
+    color: "#000000",
   },
   {
     id: "Cashflow",
     label: "Cashflow",
     icon: "swap-horizontal",
-    color: "#0ea5e9",
-  },
-  {
-    id: "Payments",
-    label: "Payments",
-    icon: "card",
-    color: "#22c55e",
-  },
-  {
-    id: "Stock",
-    label: "Stock",
-    icon: "cube",
-    color: "#f97316",
+    color: "#000000",
   },
 ];
 
 const TAB_WIDTH = 80;
 
-const chartData: Record<string, { subtitle: string; value: string; caption: string; data: number[] }> = {
+const chartData: Record<
+  string,
+  { subtitle: string; value: string; caption: string; data: number[] }
+> = {
   Expenses: {
     subtitle: "Monthly spend",
     value: "$18.8K",
@@ -64,18 +63,6 @@ const chartData: Record<string, { subtitle: string; value: string; caption: stri
     caption: "Swipe between categories",
     data: [3100, 2900, 3350, 3500, 3650, 3900, 4200],
   },
-  Payments: {
-    subtitle: "Collected this week",
-    value: "$5.8K",
-    caption: "Tap the chart for details",
-    data: [700, 850, 900, 950, 800, 1050, 1200],
-  },
-  Stock: {
-    subtitle: "On hand inventory",
-    value: "1.2K units",
-    caption: "Tap for current SKU details",
-    data: [1200, 1150, 1180, 1210, 1190, 1225, 1240],
-  },
 };
 
 const menuOptions = [
@@ -83,37 +70,37 @@ const menuOptions = [
     label: "Create Invoice",
     icon: "document-text-outline",
     route: "/create-invoice",
-    color: "#2563eb",
+    color: "#000000",
   },
   {
     label: "Create Customer",
     icon: "people-outline",
     route: "/create-customer",
-    color: "#7c3aed",
+    color: "#000000",
   },
   {
     label: "Create Supplier",
     icon: "briefcase-outline",
     route: "/create-supplier",
-    color: "#0f766e",
+    color: "#000000",
   },
   {
     label: "Create Product",
     icon: "cube-outline",
     route: "/create-product",
-    color: "#f97316",
+    color: "#000000",
   },
   {
     label: "Create Expense",
     icon: "cash-outline",
     route: "/create-expense",
-    color: "#dc2626",
+    color: "#000000",
   },
   {
     label: "Create Purchase",
     icon: "cart-outline",
     route: "/create-purchase",
-    color: "#0891b2",
+    color: "#000000",
   },
 ];
 
@@ -121,8 +108,11 @@ export default function HomeDashboard() {
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [capsules, setCapsules] = useState<StatsCapsule[]>([]);
+  const [loading, setLoading] = useState(true);
   const [activeMode, setActiveMode] = useState("Expenses");
-  const [tabLayouts, setTabLayouts] = useState<{ x: number; width: number }[]>([]);
+  const [tabLayouts, setTabLayouts] = useState<{ x: number; width: number }[]>(
+    [],
+  );
   const indicatorAnim = useRef(new Animated.Value(0)).current;
   const indicatorWidth = useRef(new Animated.Value(TAB_WIDTH)).current;
   const overlayOpacity = useRef(new Animated.Value(0)).current;
@@ -130,6 +120,7 @@ export default function HomeDashboard() {
   const fabRotation = useRef(new Animated.Value(0)).current;
 
   const loadStats = useCallback(() => {
+    setLoading(true);
     Promise.all([
       getAllSuppliers(),
       getAllCustomers(),
@@ -141,24 +132,25 @@ export default function HomeDashboard() {
         {
           title: "Suppliers",
           value: String(suppliers.length),
-          color: "#0f766e",
+          color: uberColors.primary,
         },
         {
           title: "Customers",
           value: String(customers.length),
-          color: "#7c3aed",
+          color: uberColors.primary,
         },
         {
           title: "Expenses",
           value: `$${totalExpenses.toLocaleString(undefined, { minimumFractionDigits: 0 })}`,
-          color: "#dc2626",
+          color: uberColors.primary,
         },
         {
           title: "Invoices",
           value: String(invoices.length),
-          color: "#2563eb",
+          color: uberColors.primary,
         },
       ]);
+      setLoading(false);
     });
   }, []);
 
@@ -197,10 +189,9 @@ export default function HomeDashboard() {
   };
 
   const selected = chartData[activeMode];
-  const activeColor = CHART_MODES.find((m) => m.id === activeMode)?.color ?? "#7c3aed";
+  const activeColor = "#000000";
   const activeIndex = CHART_MODES.findIndex((m) => m.id === activeMode);
 
-  // Animate indicator when active tab changes
   useEffect(() => {
     if (tabLayouts[activeIndex]) {
       const { x, width } = tabLayouts[activeIndex];
@@ -236,54 +227,62 @@ export default function HomeDashboard() {
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}
       >
-        <StatsCapsules data={capsules.length > 0 ? capsules : undefined} />
+        {loading ? (
+          <>
+            <SkeletonCard variant="stats" />
+            <View style={{ marginTop: uberSpacing.sm }} />
+            <SkeletonCard variant="chart" />
+          </>
+        ) : (
+          <>
+            <StatsCapsules data={capsules.length > 0 ? capsules : undefined} />
 
-        {/* Gluestack-style tab bar with animated indicator */}
-        <View style={styles.tabBarWrapper}>
-          <View style={styles.tabBar}>
-            <Animated.View
-              style={[
-                styles.tabIndicator,
-                {
-                  transform: [{ translateX: indicatorAnim }],
-                  width: indicatorWidth,
-                  backgroundColor: activeColor,
-                },
-              ]}
+            {/* Uber-style tab bar with animated pill indicator */}
+            <View style={styles.tabBarWrapper}>
+              <View style={styles.tabBar}>
+                <Animated.View
+                  style={[
+                    styles.tabIndicator,
+                    {
+                      transform: [{ translateX: indicatorAnim }],
+                      width: indicatorWidth,
+                    },
+                  ]}
+                />
+                {CHART_MODES.map((mode, index) => {
+                  const isActive = activeMode === mode.id;
+                  return (
+                    <Pressable
+                      key={mode.id}
+                      style={styles.tabTrigger}
+                      onLayout={(e) => onTabLayout(index, e)}
+                      onPress={() => setActiveMode(mode.id)}
+                    >
+                      <Text
+                        style={[
+                          styles.tabText,
+                          isActive && styles.tabTextActive,
+                        ]}
+                      >
+                        {mode.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
+
+            <ChartCard
+              key={activeMode}
+              title={activeMode}
+              subtitle={selected.subtitle}
+              value={selected.value}
+              caption={selected.caption}
+              data={selected.data}
+              color={activeColor}
             />
-            {CHART_MODES.map((mode, index) => {
-              const isActive = activeMode === mode.id;
-              return (
-                <Pressable
-                  key={mode.id}
-                  style={styles.tabTrigger}
-                  onLayout={(e) => onTabLayout(index, e)}
-                  onPress={() => setActiveMode(mode.id)}
-                >
-                  <Text
-                    style={[
-                      styles.tabText,
-                      isActive && { color: activeColor, fontWeight: "700" },
-                    ]}
-                  >
-                    {mode.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-        </View>
-
-        {/* Single chart card for the active mode */}
-        <ChartCard
-          key={activeMode}
-          title={activeMode}
-          subtitle={selected.subtitle}
-          value={selected.value}
-          caption={selected.caption}
-          data={selected.data}
-          color={activeColor}
-        />
+          </>
+        )}
       </ScrollView>
 
       {isMenuOpen ? (
@@ -302,16 +301,15 @@ export default function HomeDashboard() {
             transform: [{ translateY: menuTranslateY }],
           },
         ]}
-      >
-        {menuOptions.map((option) => (
+      >        {menuOptions.map((option) => (
           <Pressable
             key={option.label}
             accessibilityLabel={option.label}
             onPress={() => handleSelect(option.route)}
-            style={styles.menuItem}
+            style={({ pressed }) => [styles.menuItem, pressed && styles.menuItemPressed]}
           >
-            <View style={[styles.menuIcon, { backgroundColor: option.color }]}>
-              <Ionicons name={option.icon as never} size={18} color="#fff" />
+            <View style={styles.menuIcon}>
+              <Ionicons name={option.icon as never} size={18} color={uberColors.ink} />
             </View>
             <Text style={styles.menuText}>{option.label}</Text>
           </Pressable>
@@ -337,7 +335,7 @@ export default function HomeDashboard() {
             ],
           }}
         >
-          <Ionicons name="add" size={28} color="#fff" />
+          <Ionicons name="add" size={26} color={uberColors.onPrimary} />
         </Animated.View>
       </Pressable>
     </View>
@@ -345,43 +343,22 @@ export default function HomeDashboard() {
 }
 
 const styles = StyleSheet.create({
-  wrapper: {
-    flex: 1,
-  },
+  wrapper: { flex: 1 },
   container: {
-    paddingVertical: 24,
-    paddingHorizontal: 16,
-    alignItems: "center",
-  },
-  hero: {
-    width: "100%",
-    marginBottom: 16,
-  },
-  heading: {
-    color: "#fff",
-    fontSize: 34,
-    fontWeight: "800",
-    marginBottom: 8,
-  },
-  description: {
-    color: "#cbd5e1",
-    fontSize: 16,
-    lineHeight: 22,
-  },
-  grid: {
-    width: "100%",
+    paddingVertical: uberSpacing["2xl"],
+    paddingHorizontal: uberSpacing.lg,
     alignItems: "center",
   },
   tabBarWrapper: {
     width: "100%",
-    marginTop: 8,
-    marginBottom: 4,
+    marginTop: uberSpacing.sm,
+    marginBottom: uberSpacing.xxs,
   },
   tabBar: {
     flexDirection: "row",
     position: "relative",
-    backgroundColor: "#f1f5f9",
-    borderRadius: 10,
+    backgroundColor: uberColors.canvasSoft,
+    borderRadius: uberRounded.pill,
     padding: 3,
   },
   tabIndicator: {
@@ -389,69 +366,75 @@ const styles = StyleSheet.create({
     top: 3,
     bottom: 3,
     left: 3,
-    borderRadius: 8,
+    borderRadius: uberRounded.pillTab,
+    backgroundColor: uberColors.primary,
   },
   tabTrigger: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 8,
-    paddingHorizontal: 4,
+    paddingVertical: uberSpacing.sm,
+    paddingHorizontal: uberSpacing.xxs,
     zIndex: 1,
   },
   tabText: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "#64748b",
+    fontSize: uberTypography.bodySmStrong.fontSize,
+    fontWeight: uberTypography.bodySmStrong.fontWeight,
+    color: uberColors.body,
+    fontFamily: uberTypography.bodySmStrong.fontFamily,
+  },
+  tabTextActive: {
+    color: uberColors.onPrimary,
+    fontWeight: "700",
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(254, 254, 254, 0.47)",
+    backgroundColor: "rgba(0,0,0,0.08)",
   },
   menuContainer: {
     position: "absolute",
-    right: 16,
+    right: uberSpacing.lg,
     bottom: 92,
     width: 220,
-    padding: 10,
-    borderRadius: 16,
-    backgroundColor: "rgba(255, 255, 255, 0.96)",
-    gap: 8,
-    shadowColor: "#000",
-    shadowOpacity: 0.15,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 8,
+    padding: uberSpacing.sm,
+    borderRadius: uberRounded.xl,
+    backgroundColor: uberColors.canvas,
+    gap: uberSpacing.sm,
+    ...uberShadows.level2,
   },
   menuItem: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    paddingVertical: 10,
-    paddingHorizontal: 10,
-    borderRadius: 12,
-    backgroundColor: "#fff",
+    gap: uberSpacing.md,
+    paddingVertical: uberSpacing.sm,
+    paddingHorizontal: uberSpacing.sm,
+    borderRadius: uberRounded.pill,
+  },
+  menuItemPressed: {
+    backgroundColor: uberColors.canvasSoft,
   },
   menuIcon: {
     width: 34,
     height: 34,
     borderRadius: 17,
+    backgroundColor: uberColors.canvasSoft,
     alignItems: "center",
     justifyContent: "center",
   },
   menuText: {
-    color: "#0f172a",
-    fontSize: 15,
-    fontWeight: "600",
+    color: uberColors.ink,
+    fontSize: uberTypography.bodyMd.fontSize,
+    fontWeight: "500",
+    fontFamily: uberTypography.bodyMd.fontFamily,
   },
   fab: {
     position: "absolute",
-    right: 20,
-    bottom: 24,
+    right: uberSpacing.xl,
+    bottom: uberSpacing["2xl"],
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: "#2563eb",
+    backgroundColor: uberColors.primary,
     alignItems: "center",
     justifyContent: "center",
     elevation: 4,

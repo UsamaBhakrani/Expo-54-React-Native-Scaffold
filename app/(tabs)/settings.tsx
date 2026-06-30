@@ -9,6 +9,9 @@ import { useThemeContext } from "@/contexts/ThemeContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { purgeDatabase } from "@/db/index";
 import { seedDatabase } from "@/db/seed-data";
+import { uberColors, uberRounded, uberSpacing, uberTypography } from "@/constants/theme";
+import { UberSkeleton } from "@/components/ui/uber-skeleton";
+import { useEffect, useState } from "react";
 
 type ThemeOption = "light" | "dark" | "system";
 
@@ -22,144 +25,121 @@ export default function SettingsScreen() {
   const { colorMode, setColorMode } = useThemeContext();
   const scheme = useColorScheme();
   const isDark = scheme === "dark";
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    // Simulate a brief load to show skeleton, then reveal
+    const timer = setTimeout(() => setReady(true), 200);
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
-    <SafeAreaView style={[styles.safeArea, isDark && styles.safeAreaDark]}>
+    <SafeAreaView style={styles.safeArea}>
       <TabAnimatedView style={{ flex: 1 }}>
-        <ThemedView style={[styles.container, isDark && styles.containerDark]}>
-          <ThemedText type="title">Settings</ThemedText>
+        <ThemedView style={styles.container}>
+          <ThemedText type="displayLg">Settings</ThemedText>
 
-          {/* Appearance */}
-          <View style={[styles.section, isDark && styles.sectionDark]}>
-            <Text style={[styles.sectionTitle, isDark && styles.textDark]}>
-              Appearance
-            </Text>
-            <View style={styles.themeOptions}>
-              {THEME_OPTIONS.map((opt) => {
-                const isSelected = colorMode === opt.value;
-                return (
-                  <Pressable
-                    key={opt.value}
-                    style={[
-                      styles.themeOption,
-                      isDark && styles.themeOptionDark,
-                      isSelected && styles.themeOptionSelected,
-                      isSelected && isDark && styles.themeOptionSelectedDark,
-                    ]}
-                    onPress={() => setColorMode(opt.value)}
-                  >
-                    <Ionicons
-                      name={opt.icon as any}
-                      size={22}
-                      color={
-                        isSelected
-                          ? isDark
-                            ? "#fff"
-                            : "#fff"
-                          : isDark
-                          ? "#94a3b8"
-                          : "#64748b"
-                      }
-                    />
-                    <Text
-                      style={[
-                        styles.themeOptionLabel,
-                        isDark && styles.textDark,
-                        isSelected && styles.themeOptionLabelSelected,
-                        isSelected && isDark && styles.themeOptionLabelSelected,
-                      ]}
-                    >
-                      {opt.label}
-                    </Text>
-                    {isSelected && (
-                      <Ionicons
-                        name="checkmark-circle"
-                        size={18}
-                        color={isDark ? "#22c55e" : "#22c55e"}
-                      />
-                    )}
-                  </Pressable>
-                );
-              })}
+          {!ready ? (
+            <View style={{ gap: uberSpacing.lg }}>
+              <UberSkeleton variant="rect" width="100%" height={160} style={{ borderRadius: uberRounded.xl }} />
+              <UberSkeleton variant="rect" width="100%" height={160} style={{ borderRadius: uberRounded.xl }} />
+              <UberSkeleton variant="rect" width="100%" height={100} style={{ borderRadius: uberRounded.xl }} />
             </View>
-          </View>
+          ) : (
+            <>
+              {/* Appearance */}
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Appearance</Text>
+                <View style={styles.themeOptions}>
+                  {THEME_OPTIONS.map((opt) => {
+                    const isSelected = colorMode === opt.value;
+                    return (
+                      <Pressable
+                        key={opt.value}
+                        style={[
+                          styles.themeOption,
+                          isSelected && styles.themeOptionSelected,
+                        ]}
+                        onPress={() => setColorMode(opt.value)}
+                      >
+                        <Ionicons
+                          name={opt.icon as any}
+                          size={20}
+                          color={isSelected ? uberColors.onPrimary : uberColors.ink}
+                        />
+                        <Text
+                          style={[
+                            styles.themeOptionLabel,
+                            isSelected && styles.themeOptionLabelSelected,
+                          ]}
+                        >
+                          {opt.label}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
 
-          {/* Seed Database */}
-          <View style={[styles.section, isDark && styles.sectionDark]}>
-            <Text style={[styles.sectionTitle, isDark && styles.textDark]}>
-              Data
-            </Text>
-            <Pressable
-              style={[styles.seedButton, isDark && styles.seedButtonDark]}
-              onPress={async () => {
-                try {
-                  await seedDatabase();
-                  Alert.alert("Seeded", "Sample data has been added to the database.");
-                } catch (e) {
-                  Alert.alert("Error", "Failed to seed database.");
-                }
-              }}
-            >
-              <Ionicons name="flask-outline" size={20} color="#fff" />
-              <Text style={styles.seedButtonText}>Seed with sample data</Text>
-            </Pressable>
-            <Pressable
-              style={[styles.dangerButton, isDark && styles.dangerButtonDark]}
-              onPress={() => {
-                Alert.alert(
-                  "Purge Database",
-                  "This will delete ALL data from the database. This cannot be undone. Are you sure?",
-                  [
-                    { text: "Cancel", style: "cancel" },
-                    {
-                      text: "Purge",
-                      style: "destructive",
-                      onPress: () => {
-                        try {
-                          purgeDatabase();
-                          Alert.alert("Purged", "All database records have been deleted.");
-                        } catch (e) {
-                          Alert.alert("Error", "Failed to purge database.");
-                        }
-                      },
-                    },
-                  ],
-                );
-              }}
-            >
-              <Ionicons name="trash-outline" size={20} color="#fff" />
-              <Text style={styles.dangerButtonText}>Purge all data</Text>
-            </Pressable>
-            <Text
-              style={[styles.sectionHint, isDark && styles.textMutedDark]}
-            >
-              Populates the database with sample suppliers, customers,
-              expenses, products, invoices, and transactions for testing.
-            </Text>
-          </View>
+              {/* Data */}
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Data</Text>
+                <Pressable style={({ pressed }) => [styles.seedButton, pressed && styles.pressedBlack]} onPress={async () => {
+                  try {
+                    await seedDatabase();
+                    Alert.alert("Seeded", "Sample data has been added to the database.");
+                  } catch {
+                    Alert.alert("Error", "Failed to seed database.");
+                  }
+                }}>
+                  <Ionicons name="flask-outline" size={18} color={uberColors.onPrimary} />
+                  <Text style={styles.seedButtonText}>Seed with sample data</Text>
+                </Pressable>
+                <Pressable
+                  style={({ pressed }) => [styles.dangerButton, pressed && styles.pressedDanger]}
+                  onPress={() => {
+                    Alert.alert(
+                      "Purge Database",
+                      "This will delete ALL data. This cannot be undone. Are you sure?",
+                      [
+                        { text: "Cancel", style: "cancel" },
+                        {
+                          text: "Purge", style: "destructive",
+                          onPress: () => {
+                            try {
+                              purgeDatabase();
+                              Alert.alert("Purged", "All database records have been deleted.");
+                            } catch {
+                              Alert.alert("Error", "Failed to purge database.");
+                            }
+                          },
+                        },
+                      ],
+                    );
+                  }}
+                >
+                  <Ionicons name="trash-outline" size={18} color={uberColors.onPrimary} />
+                  <Text style={styles.dangerButtonText}>Purge all data</Text>
+                </Pressable>
+                <Text style={styles.sectionHint}>
+                  Populates the database with sample suppliers, customers, expenses, products, invoices, and transactions for testing.
+                </Text>
+              </View>
 
-          {/* App Info */}
-          <View style={[styles.section, isDark && styles.sectionDark]}>
-            <Text style={[styles.sectionTitle, isDark && styles.textDark]}>
-              About
-            </Text>
-            <View style={styles.infoRow}>
-              <Text style={[styles.infoLabel, isDark && styles.textMutedDark]}>
-                App
-              </Text>
-              <Text style={[styles.infoValue, isDark && styles.textDark]}>
-                My App
-              </Text>
-            </View>
-            <View style={styles.infoRow}>
-              <Text style={[styles.infoLabel, isDark && styles.textMutedDark]}>
-                Version
-              </Text>
-              <Text style={[styles.infoValue, isDark && styles.textDark]}>
-                1.0.0
-              </Text>
-            </View>
-          </View>
+              {/* About */}
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>About</Text>
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>App</Text>
+                  <Text style={styles.infoValue}>My App</Text>
+                </View>
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Version</Text>
+                  <Text style={styles.infoValue}>1.0.0</Text>
+                </View>
+              </View>
+            </>
+          )}
         </ThemedView>
       </TabAnimatedView>
     </SafeAreaView>
@@ -168,90 +148,99 @@ export default function SettingsScreen() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
-  safeAreaDark: { backgroundColor: "#0f172a" },
-  container: { flex: 1, padding: 16, gap: 20 },
-  containerDark: { backgroundColor: "#0f172a" },
+  container: { flex: 1, padding: uberSpacing.lg, gap: uberSpacing.xl },
   section: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 16,
-    gap: 12,
-    shadowColor: "#000",
-    shadowOpacity: 0.03,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 1,
+    backgroundColor: uberColors.canvasSoft,
+    borderRadius: uberRounded.xl,
+    padding: uberSpacing.lg,
+    gap: uberSpacing.md,
   },
-  sectionDark: { backgroundColor: "#1e293b" },
   sectionTitle: {
-    fontSize: 13,
+    fontSize: uberTypography.caption.fontSize,
     fontWeight: "700",
-    color: "#64748b",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
+    color: uberColors.body,
+    fontFamily: uberTypography.caption.fontFamily,
   },
   sectionHint: {
-    fontSize: 13,
-    color: "#94a3b8",
+    fontSize: uberTypography.caption.fontSize,
+    color: uberColors.mute,
     lineHeight: 18,
+    fontFamily: uberTypography.caption.fontFamily,
   },
-  themeOptions: { flexDirection: "row", gap: 8 },
+  themeOptions: { flexDirection: "row", gap: uberSpacing.sm },
   themeOption: {
     flex: 1,
     flexDirection: "column",
     alignItems: "center",
-    gap: 6,
-    paddingVertical: 14,
-    paddingHorizontal: 8,
-    borderRadius: 12,
-    backgroundColor: "#f8fafc",
-    borderWidth: 2,
-    borderColor: "transparent",
+    gap: uberSpacing.xs,
+    paddingVertical: uberSpacing.md,
+    paddingHorizontal: uberSpacing.sm,
+    borderRadius: uberRounded.pill,
+    backgroundColor: uberColors.canvas,
+    borderWidth: 1,
+    borderColor: uberColors.canvasSoft,
   },
-  themeOptionDark: { backgroundColor: "#334155" },
   themeOptionSelected: {
-    backgroundColor: "#2563eb",
-    borderColor: "#1d4ed8",
-  },
-  themeOptionSelectedDark: {
-    backgroundColor: "#2563eb",
-    borderColor: "#3b82f6",
+    backgroundColor: uberColors.primary,
+    borderColor: uberColors.primary,
   },
   themeOptionLabel: {
-    fontSize: 13,
+    fontSize: uberTypography.caption.fontSize,
     fontWeight: "600",
-    color: "#334155",
+    color: uberColors.ink,
+    fontFamily: uberTypography.caption.fontFamily,
   },
-  themeOptionLabelSelected: { color: "#fff" },
-  textDark: { color: "#f1f5f9" },
-  textMutedDark: { color: "#94a3b8" },
+  themeOptionLabelSelected: { color: uberColors.onPrimary },
   seedButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
-    backgroundColor: "#7c3aed",
-    borderRadius: 12,
-    paddingVertical: 12,
+    gap: uberSpacing.sm,
+    backgroundColor: uberColors.primary,
+    borderRadius: uberRounded.pill,
+    paddingVertical: uberSpacing.md,
   },
-  seedButtonDark: { backgroundColor: "#6d28d9" },
-  seedButtonText: { color: "#fff", fontWeight: "700", fontSize: 15 },
+  pressedBlack: {
+    backgroundColor: uberColors.blackElevated,
+  },
+  pressedDanger: {
+    backgroundColor: "#b91c1c",
+  },
+  seedButtonText: {
+    color: uberColors.onPrimary,
+    fontWeight: "500",
+    fontSize: uberTypography.buttonMd.fontSize,
+    fontFamily: uberTypography.buttonMd.fontFamily,
+  },
   dangerButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
+    gap: uberSpacing.sm,
     backgroundColor: "#dc2626",
-    borderRadius: 12,
-    paddingVertical: 12,
+    borderRadius: uberRounded.pill,
+    paddingVertical: uberSpacing.md,
   },
-  dangerButtonDark: { backgroundColor: "#b91c1c" },
-  dangerButtonText: { color: "#fff", fontWeight: "700", fontSize: 15 },
+  dangerButtonText: {
+    color: uberColors.onPrimary,
+    fontWeight: "500",
+    fontSize: uberTypography.buttonMd.fontSize,
+    fontFamily: uberTypography.buttonMd.fontFamily,
+  },
   infoRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-  infoLabel: { fontSize: 15, color: "#64748b" },
-  infoValue: { fontSize: 15, fontWeight: "600", color: "#0f172a" },
+  infoLabel: {
+    fontSize: uberTypography.bodySm.fontSize,
+    color: uberColors.body,
+    fontFamily: uberTypography.bodySm.fontFamily,
+  },
+  infoValue: {
+    fontSize: uberTypography.bodySm.fontSize,
+    fontWeight: "600",
+    color: uberColors.ink,
+    fontFamily: uberTypography.bodySm.fontFamily,
+  },
 });

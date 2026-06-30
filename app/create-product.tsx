@@ -6,14 +6,22 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { UberButton } from "@/components/ui/uber-button";
+import { UberHeader } from "@/components/ui/uber-header";
+import { UberInput } from "@/components/ui/uber-input";
 import PickerModal from "@/components/ui/picker-modal";
 import type { PickerItem } from "@/components/ui/picker-modal";
-import { getAllSuppliers, insertProduct, type Supplier } from "@/db/index";
+import { getAllSuppliers, getNextSku, insertProduct, type Supplier } from "@/db/index";
+import {
+  uberColors,
+  uberRounded,
+  uberSpacing,
+  uberTypography,
+} from "@/constants/theme";
 
 export const options = { headerShown: false };
 
@@ -45,6 +53,10 @@ export default function CreateProductScreen() {
 
   useEffect(() => {
     loadSuppliers();
+    // Auto-populate SKU from last ID
+    getNextSku().then((sku) =>
+      setForm((prev) => ({ ...prev, sku })),
+    );
   }, [loadSuppliers]);
 
   const handleChange = (field: keyof typeof form, value: string) => {
@@ -85,67 +97,124 @@ export default function CreateProductScreen() {
           handleChange("supplierId", item.id);
           setShowSupplierPicker(false);
         }}
-        onClose={() => { setShowSupplierPicker(false); loadSuppliers(); }}
+        onClose={() => {
+          setShowSupplierPicker(false);
+          loadSuppliers();
+        }}
         title="Select Supplier"
         emptyText="No suppliers found. Create one first."
       />
+      <UberHeader title="New product" subtitle="Add a new product" />
       <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.title}>Create product</Text>
-        <Text style={styles.subtitle}>Add the product details below.</Text>
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Product name</Text>
-          <TextInput style={styles.input} value={form.name} onChangeText={(v) => handleChange("name", v)} placeholder="Wireless Mouse" />
-        </View>
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>SKU</Text>
-          <TextInput style={styles.input} value={form.sku} onChangeText={(v) => handleChange("sku", v)} placeholder="WM-001" />
-        </View>
+        <UberInput
+          label="Product name"
+          value={form.name}
+          onChangeText={(v) => handleChange("name", v)}
+          placeholder="Wireless Mouse"
+        />
+        <UberInput
+          label="SKU"
+          value={form.sku}
+          onChangeText={(v) => handleChange("sku", v)}
+          placeholder="WM-001"
+        />
         <View style={styles.inlineRow}>
-          <View style={[styles.formGroup, styles.flexHalf]}>
-            <Text style={styles.label}>Price</Text>
-            <TextInput style={styles.input} value={form.price} onChangeText={(v) => handleChange("price", v)} placeholder="0.00" keyboardType="decimal-pad" />
-          </View>
-          <View style={[styles.formGroup, styles.flexHalf]}>
-            <Text style={styles.label}>Stock</Text>
-            <TextInput style={styles.input} value={form.stock} onChangeText={(v) => handleChange("stock", v)} placeholder="100" keyboardType="number-pad" />
-          </View>
+          <UberInput
+            label="Price"
+            value={form.price}
+            onChangeText={(v) => handleChange("price", v)}
+            placeholder="0.00"
+            keyboardType="decimal-pad"
+            containerStyle={{ flex: 1 }}
+          />
+          <UberInput
+            label="Stock"
+            value={form.stock}
+            onChangeText={(v) => handleChange("stock", v)}
+            placeholder="100"
+            keyboardType="number-pad"
+            containerStyle={{ flex: 1 }}
+          />
         </View>
         <View style={styles.formGroup}>
           <Text style={styles.label}>Supplier</Text>
-          <Pressable style={styles.pickerButton} onPress={() => setShowSupplierPicker(true)}>
-            <Text style={[styles.pickerButtonText, !form.supplierId && styles.pickerPlaceholder]}>
+          <Pressable
+            style={styles.pickerButton}
+            onPress={() => setShowSupplierPicker(true)}
+          >
+            <Text
+              style={[
+                styles.pickerButtonText,
+                !form.supplierId && styles.pickerPlaceholder,
+              ]}
+            >
               {form.supplierId ? "Selected supplier" : "Select a supplier"}
             </Text>
             <Text style={styles.pickerArrow}>▼</Text>
           </Pressable>
         </View>
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Notes</Text>
-          <TextInput style={[styles.input, styles.textArea]} value={form.notes} onChangeText={(v) => handleChange("notes", v)} placeholder="Optional notes" multiline numberOfLines={4} />
+        <UberInput
+          label="Notes"
+          value={form.notes}
+          onChangeText={(v) => handleChange("notes", v)}
+          placeholder="Optional notes"
+          multiline
+          numberOfLines={4}
+          containerStyle={styles.textArea}
+        />
+        <View style={styles.buttonStack}>
+          <UberButton
+            variant="subtle"
+            label="Cancel"
+            onPress={() => router.back()}
+          />
+          <UberButton
+            variant="primary"
+            label={isSubmitting ? "Saving..." : "Create product"}
+            onPress={handleSubmit}
+            disabled={isSubmitting}
+            loading={isSubmitting}
+          />
         </View>
-        <Pressable style={styles.button} onPress={handleSubmit} disabled={isSubmitting}>
-          <Text style={styles.buttonText}>{isSubmitting ? "Saving..." : "Create product"}</Text>
-        </Pressable>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: "#f8fafc" },
-  container: { padding: 20, paddingBottom: 40, gap: 12 },
-  title: { fontSize: 28, fontWeight: "700", color: "#0f172a" },
-  subtitle: { fontSize: 15, color: "#475569", marginBottom: 8 },
-  formGroup: { gap: 6 },
-  label: { fontSize: 14, fontWeight: "600", color: "#334155" },
-  input: { borderWidth: 1, borderColor: "#cbd5e1", borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, backgroundColor: "#fff" },
-  textArea: { minHeight: 100, textAlignVertical: "top" },
-  inlineRow: { flexDirection: "row", gap: 12 },
-  flexHalf: { flex: 1 },
-  pickerButton: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderWidth: 1, borderColor: "#cbd5e1", borderRadius: 12, paddingHorizontal: 12, paddingVertical: 12, backgroundColor: "#fff" },
-  pickerButtonText: { fontSize: 15, color: "#0f172a" },
-  pickerPlaceholder: { color: "#94a3b8" },
-  pickerArrow: { fontSize: 10, color: "#64748b" },
-  button: { marginTop: 8, backgroundColor: "#f97316", borderRadius: 12, paddingVertical: 14, alignItems: "center" },
-  buttonText: { color: "#fff", fontWeight: "700", fontSize: 16 },
+  safeArea: { flex: 1, backgroundColor: uberColors.canvas },
+  container: {
+    padding: uberSpacing.lg,
+    paddingBottom: 40,
+    gap: uberSpacing.lg,
+  },
+  formGroup: { gap: uberSpacing.xs },
+  label: {
+    fontSize: uberTypography.bodySmStrong.fontSize,
+    fontWeight: uberTypography.bodySmStrong.fontWeight,
+    color: uberColors.ink,
+    fontFamily: uberTypography.bodySmStrong.fontFamily,
+  },
+  textArea: { minHeight: 100 },
+  inlineRow: { flexDirection: "row", gap: uberSpacing.md },
+  pickerButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: uberColors.canvasSoft,
+    borderRadius: uberRounded.md,
+    padding: uberSpacing.lg,
+  },
+  pickerButtonText: {
+    fontSize: uberTypography.bodyMd.fontSize,
+    color: uberColors.ink,
+    fontFamily: uberTypography.bodyMd.fontFamily,
+  },
+  pickerPlaceholder: { color: uberColors.mute },
+  pickerArrow: { fontSize: 10, color: uberColors.body },
+  buttonStack: {
+    flexDirection: "column",
+    gap: uberSpacing.sm,
+    marginTop: uberSpacing.lg,
+  },
 });

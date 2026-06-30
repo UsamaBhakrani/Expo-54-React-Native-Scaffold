@@ -2,6 +2,8 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 
+import { uberColors, uberRounded, uberSpacing, uberTypography } from "@/constants/theme";
+
 export type StatsCapsule = {
   title: string;
   value: string;
@@ -13,15 +15,13 @@ type Props = {
 };
 
 const FALLBACK_DATA: StatsCapsule[] = [
-  { title: "Suppliers", value: "0", color: "#0f766e" },
-  { title: "Customers", value: "0", color: "#7c3aed" },
-  { title: "Expenses", value: "$0", color: "#dc2626" },
-  { title: "Invoices", value: "0", color: "#2563eb" },
+  { title: "Suppliers", value: "0", color: uberColors.primary },
+  { title: "Customers", value: "0", color: uberColors.primary },
+  { title: "Expenses", value: "$0", color: uberColors.primary },
+  { title: "Invoices", value: "0", color: uberColors.primary },
 ];
 
 export default function StatsCapsules({ data }: Props) {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === "dark";
   const capsules = data ?? FALLBACK_DATA;
 
   return (
@@ -29,22 +29,10 @@ export default function StatsCapsules({ data }: Props) {
       {capsules.map((capsule) => (
         <View
           key={capsule.title}
-          style={[
-            styles.capsule,
-            {
-              backgroundColor: isDark ? "#1f2937" : "#f3f4f6",
-              borderLeftColor: capsule.color,
-            },
-          ]}
+          style={styles.capsule}
         >
-          <Text
-            style={[styles.title, { color: isDark ? "#e5e7eb" : "#374151" }]}
-          >
-            {capsule.title}
-          </Text>
-          <Text style={[styles.value, { color: capsule.color }]}>
-            {capsule.value}
-          </Text>
+          <Text style={styles.title}>{capsule.title}</Text>
+          <Text style={styles.value}>{capsule.value}</Text>
         </View>
       ))}
     </View>
@@ -52,36 +40,30 @@ export default function StatsCapsules({ data }: Props) {
 }
 
 const styles = StyleSheet.create({
-  scrollContainer: {
-    paddingHorizontal: 8,
-  },
   container: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 12,
+    gap: uberSpacing.sm,
   },
   capsule: {
     width: "48%",
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    borderLeftWidth: 4,
+    paddingVertical: uberSpacing.lg,
+    paddingHorizontal: uberSpacing.lg,
+    borderRadius: uberRounded.lg,
+    backgroundColor: uberColors.canvasSoft,
     justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 3,
   },
   title: {
-    fontSize: 12,
-    fontWeight: "500",
-    marginBottom: 6,
-    letterSpacing: 0.5,
+    fontSize: uberTypography.caption.fontSize,
+    fontWeight: uberTypography.bodySmStrong.fontWeight,
+    color: uberColors.body,
+    fontFamily: uberTypography.caption.fontFamily,
+    marginBottom: uberSpacing.xxs,
   },
   value: {
-    fontSize: 16,
-    fontWeight: "700",
-    letterSpacing: 0.3,
+    fontSize: uberTypography.displaySm.fontSize,
+    fontWeight: uberTypography.displaySm.fontWeight,
+    color: uberColors.ink,
+    fontFamily: uberTypography.displaySm.fontFamily,
   },
 });

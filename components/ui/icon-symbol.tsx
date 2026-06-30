@@ -23,6 +23,8 @@ const MAPPING = {
   "chevron.right": "chevron-right",
   "list.bullet.rectangle.portrait.fill": "list",
   "person.2.fill": "groups",
+  "person.crop.circle.fill": "person",
+  "shippingbox.fill": "inventory-2",
   "dollarsign.circle.fill": "attach-money",
   "gearshape.fill": "settings",
 } as IconMapping;

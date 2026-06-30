@@ -4,20 +4,28 @@ import React from "react";
 import { HapticTab } from "@/components/haptic-tab";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { TabDirectionProvider } from "@/components/ui/tab-direction";
-import { Colors } from "@/constants/theme";
-import { useColorScheme } from "@/hooks/use-color-scheme";
+import { uberColors } from "@/constants/theme";
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
-
   return (
     <TabDirectionProvider>
       <Tabs
         screenOptions={{
-          tabBarActiveTintColor: Colors[colorScheme ?? "light"].tint,
           headerShown: false,
           tabBarButton: HapticTab,
+          tabBarActiveTintColor: uberColors.primary,
+          tabBarInactiveTintColor: uberColors.body,
+          tabBarStyle: {
+            backgroundColor: uberColors.canvas,
+            borderTopColor: uberColors.canvasSoft,
+            borderTopWidth: 1,
+            paddingBottom: 8,
+            height: 60,
+          },
           tabBarLabelStyle: {
+            fontFamily: "UberMoveText, system-ui, sans-serif",
+            fontSize: 12,
+            fontWeight: "500",
             paddingBottom: 4,
           },
         }}
@@ -27,7 +35,7 @@ export default function TabLayout() {
           options={{
             title: "Home",
             tabBarIcon: ({ color }) => (
-              <IconSymbol size={28} name="house.fill" color={color} />
+              <IconSymbol size={26} name="house.fill" color={color} />
             ),
           }}
         />
@@ -36,7 +44,7 @@ export default function TabLayout() {
           options={{
             title: "Suppliers",
             tabBarIcon: ({ color }) => (
-              <IconSymbol size={28} name="person.2.fill" color={color} />
+              <IconSymbol size={26} name="person.2.fill" color={color} />
             ),
           }}
         />
@@ -45,11 +53,7 @@ export default function TabLayout() {
           options={{
             title: "Expenses",
             tabBarIcon: ({ color }) => (
-              <IconSymbol
-                size={28}
-                name="dollarsign.circle.fill"
-                color={color}
-              />
+              <IconSymbol size={26} name="dollarsign.circle.fill" color={color} />
             ),
           }}
         />
@@ -58,11 +62,7 @@ export default function TabLayout() {
           options={{
             title: "Customers",
             tabBarIcon: ({ color }) => (
-              <IconSymbol
-                size={28}
-                name="person.crop.circle.fill"
-                color={color}
-              />
+              <IconSymbol size={26} name="person.crop.circle.fill" color={color} />
             ),
           }}
         />
@@ -71,14 +71,15 @@ export default function TabLayout() {
           options={{
             title: "Products",
             tabBarIcon: ({ color }) => (
-              <IconSymbol size={28} name="shippingbox.fill" color={color} />
+              <IconSymbol size={26} name="shippingbox.fill" color={color} />
             ),
           }}
         />
+
         <Tabs.Screen
           name="settings"
           options={{
-            href: null, // hidden from tab bar, accessible via navigation
+            href: null,
           }}
         />
       </Tabs>

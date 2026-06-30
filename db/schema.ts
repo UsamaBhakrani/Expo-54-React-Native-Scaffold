@@ -59,4 +59,5 @@ export const supplierTransactions = sqliteTable("supplier_transaction", {
   debit: real("debit"),
   credit: real("credit"),
   balance: real("balance").notNull(),
+  purchaseNumber: text("purchase_number"),
 });

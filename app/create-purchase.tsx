@@ -6,20 +6,29 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import DatePickerField from "@/components/DatePickerField";
+import { UberButton } from "@/components/ui/uber-button";
+import { UberHeader } from "@/components/ui/uber-header";
+import { UberInput } from "@/components/ui/uber-input";
 import PickerModal from "@/components/ui/picker-modal";
 import type { PickerItem } from "@/components/ui/picker-modal";
 import {
   getAllSuppliers,
   getLastTransactionBySupplier,
+  getNextPurchaseNumber,
   insertSupplierTransaction,
   type Supplier,
 } from "@/db/index";
+import {
+  uberColors,
+  uberRounded,
+  uberSpacing,
+  uberTypography,
+} from "@/constants/theme";
 
 export const options = { headerShown: false };
 
@@ -30,6 +39,7 @@ export default function CreatePurchaseScreen() {
   const [showSupplierPicker, setShowSupplierPicker] = useState(false);
   const [form, setForm] = useState({
     supplierId: "",
+    purchaseNumber: "",
     date: new Date().toISOString().slice(0, 10),
     narration: "",
     debit: "",
@@ -50,6 +60,10 @@ export default function CreatePurchaseScreen() {
 
   useEffect(() => {
     loadSuppliers();
+    // Auto-populate purchase number from last ID
+    getNextPurchaseNumber().then((purchaseNumber) =>
+      setForm((prev) => ({ ...prev, purchaseNumber })),
+    );
   }, [loadSuppliers]);
 
   const handleChange = (field: keyof typeof form, value: string) => {
@@ -74,13 +88,14 @@ export default function CreatePurchaseScreen() {
 
     setIsSubmitting(true);
     try {
-      // Calculate running balance from last transaction
-      const lastTxns = await getLastTransactionBySupplier(Number(form.supplierId));
+      const lastTxns = await getLastTransactionBySupplier(
+        Number(form.supplierId),
+      );
       const prevBalance = lastTxns[0]?.balance ?? 0;
       const newBalance = prevBalance + debitVal - creditVal;
-
       await insertSupplierTransaction({
         supplierId: Number(form.supplierId),
+        purchaseNumber: form.purchaseNumber.trim() || null,
         date: form.date,
         narration: form.narration.trim(),
         debit: debitVal || null,
@@ -106,17 +121,33 @@ export default function CreatePurchaseScreen() {
           handleChange("supplierId", item.id);
           setShowSupplierPicker(false);
         }}
-        onClose={() => { setShowSupplierPicker(false); loadSuppliers(); }}
+        onClose={() => {
+          setShowSupplierPicker(false);
+          loadSuppliers();
+        }}
         title="Select Supplier"
         emptyText="No suppliers found. Create one first."
       />
+      <UberHeader title="Record purchase" subtitle="Create a Purchase" />
       <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.title}>Record Purchase</Text>
-        <Text style={styles.subtitle}>Record a debit or credit transaction for a supplier.</Text>
+        <UberInput
+          label="Purchase number"
+          value={form.purchaseNumber}
+          onChangeText={(v) => handleChange("purchaseNumber", v)}
+          placeholder="PUR-1"
+        />
         <View style={styles.formGroup}>
           <Text style={styles.label}>Supplier</Text>
-          <Pressable style={styles.pickerButton} onPress={() => setShowSupplierPicker(true)}>
-            <Text style={[styles.pickerButtonText, !form.supplierId && styles.pickerPlaceholder]}>
+          <Pressable
+            style={styles.pickerButton}
+            onPress={() => setShowSupplierPicker(true)}
+          >
+            <Text
+              style={[
+                styles.pickerButtonText,
+                !form.supplierId && styles.pickerPlaceholder,
+              ]}
+            >
               {form.supplierId ? "Selected supplier" : "Select a supplier"}
             </Text>
             <Text style={styles.pickerArrow}>▼</Text>
@@ -127,44 +158,82 @@ export default function CreatePurchaseScreen() {
           value={form.date}
           onChange={(v) => handleChange("date", v)}
         />
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Narration</Text>
-          <TextInput style={styles.input} value={form.narration} onChangeText={(v) => handleChange("narration", v)} placeholder="Purchase of office supplies" />
-        </View>
+        <UberInput
+          label="Narration"
+          value={form.narration}
+          onChangeText={(v) => handleChange("narration", v)}
+          placeholder="Purchase of office supplies"
+        />
         <View style={styles.inlineRow}>
-          <View style={[styles.formGroup, styles.flexHalf]}>
-            <Text style={styles.label}>Debit (amount due)</Text>
-            <TextInput style={[styles.input, styles.debitInput]} value={form.debit} onChangeText={(v) => handleChange("debit", v)} placeholder="0.00" keyboardType="decimal-pad" />
-          </View>
-          <View style={[styles.formGroup, styles.flexHalf]}>
-            <Text style={styles.label}>Credit (amount paid)</Text>
-            <TextInput style={[styles.input, styles.creditInput]} value={form.credit} onChangeText={(v) => handleChange("credit", v)} placeholder="0.00" keyboardType="decimal-pad" />
-          </View>
+          <UberInput
+            label="Debit (amount due)"
+            value={form.debit}
+            onChangeText={(v) => handleChange("debit", v)}
+            placeholder="0.00"
+            keyboardType="decimal-pad"
+            containerStyle={{ flex: 1 }}
+          />
+          <UberInput
+            label="Credit (amount paid)"
+            value={form.credit}
+            onChangeText={(v) => handleChange("credit", v)}
+            placeholder="0.00"
+            keyboardType="decimal-pad"
+            containerStyle={{ flex: 1 }}
+          />
         </View>
-        <Pressable style={styles.button} onPress={handleSubmit} disabled={isSubmitting}>
-          <Text style={styles.buttonText}>{isSubmitting ? "Saving..." : "Record purchase"}</Text>
-        </Pressable>
+        <View style={styles.buttonStack}>
+          <UberButton
+            variant="subtle"
+            label="Cancel"
+            onPress={() => router.back()}
+          />
+          <UberButton
+            variant="primary"
+            label={isSubmitting ? "Saving..." : "Record purchase"}
+            onPress={handleSubmit}
+            disabled={isSubmitting}
+            loading={isSubmitting}
+          />
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: "#f8fafc" },
-  container: { padding: 20, paddingBottom: 40, gap: 12 },
-  title: { fontSize: 28, fontWeight: "700", color: "#0f172a" },
-  subtitle: { fontSize: 15, color: "#475569", marginBottom: 8 },
-  formGroup: { gap: 6 },
-  label: { fontSize: 14, fontWeight: "600", color: "#334155" },
-  input: { borderWidth: 1, borderColor: "#cbd5e1", borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, backgroundColor: "#fff" },
-  debitInput: { borderColor: "#fca5a5" },
-  creditInput: { borderColor: "#86efac" },
-  inlineRow: { flexDirection: "row", gap: 12 },
-  flexHalf: { flex: 1 },
-  pickerButton: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderWidth: 1, borderColor: "#cbd5e1", borderRadius: 12, paddingHorizontal: 12, paddingVertical: 12, backgroundColor: "#fff" },
-  pickerButtonText: { fontSize: 15, color: "#0f172a" },
-  pickerPlaceholder: { color: "#94a3b8" },
-  pickerArrow: { fontSize: 10, color: "#64748b" },
-  button: { marginTop: 8, backgroundColor: "#0891b2", borderRadius: 12, paddingVertical: 14, alignItems: "center" },
-  buttonText: { color: "#fff", fontWeight: "700", fontSize: 16 },
+  safeArea: { flex: 1, backgroundColor: uberColors.canvas },
+  container: {
+    padding: uberSpacing.lg,
+    paddingBottom: 40,
+    gap: uberSpacing.lg,
+  },
+  formGroup: { gap: uberSpacing.xs },
+  label: {
+    fontSize: uberTypography.bodySmStrong.fontSize,
+    fontWeight: uberTypography.bodySmStrong.fontWeight,
+    color: uberColors.ink,
+    fontFamily: uberTypography.bodySmStrong.fontFamily,
+  },
+  inlineRow: { flexDirection: "row", gap: uberSpacing.md },
+  pickerButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: uberColors.canvasSoft,
+    borderRadius: uberRounded.md,
+    padding: uberSpacing.lg,
+  },
+  pickerButtonText: {
+    fontSize: uberTypography.bodyMd.fontSize,
+    color: uberColors.ink,
+    fontFamily: uberTypography.bodyMd.fontFamily,
+  },
+  pickerPlaceholder: { color: uberColors.mute },
+  pickerArrow: { fontSize: 10, color: uberColors.body },
+  buttonStack: {
+    flexDirection: "column",
+    gap: uberSpacing.sm,
+    marginTop: uberSpacing.lg,
+  },
 });

@@ -12,30 +12,37 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import {
+  uberColors,
+  uberRounded,
+  uberSpacing,
+  uberTypography,
+} from "@/constants/theme";
+
 const { width } = Dimensions.get("window");
 
 const steps = [
   {
     icon: "wallet-outline",
-    color: "#2563eb",
-    bgColor: "#eff6ff",
-    title: "Welcome to MyApp",
+    color: uberColors.primary,
+    bgColor: uberColors.canvas,
+    title: "Welcome to Accounts",
     description:
       "Your personal accounting companion. Manage ledgers, track suppliers, and stay on top of your finances.",
   },
   {
     icon: "book-outline",
-    color: "#7c3aed",
-    bgColor: "#f5f3ff",
-    title: "Organize Your Ledger",
+    color: uberColors.primary,
+    bgColor: uberColors.canvas,
+    title: "Organize your ledger",
     description:
       "Keep your financial entries tidy and easy to review with a clean, intuitive ledger experience.",
   },
   {
     icon: "people-outline",
-    color: "#0f766e",
-    bgColor: "#f0fdf4",
-    title: "Manage Everything",
+    color: uberColors.primary,
+    bgColor: uberColors.canvas,
+    title: "Manage everything",
     description:
       "Track supplier relationships, create invoices, record expenses, and manage products — all in one place.",
   },
@@ -51,7 +58,6 @@ export default function OnboardingScreen() {
 
   const animateTo = useCallback(
     (direction: 1 | -1) => {
-      // Fade out and slide current
       Animated.parallel([
         Animated.timing(fadeAnim, {
           toValue: 0,
@@ -93,42 +99,36 @@ export default function OnboardingScreen() {
     animateTo(1);
   };
 
-  const handleSkip = () => {
-    router.replace("/auth");
-  };
+  const handleSkip = () => router.replace("/auth");
 
   const current = steps[step];
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Skip button */}
       {!isLastStep && (
         <Pressable onPress={handleSkip} style={styles.skipButton}>
           <Text style={styles.skipText}>Skip</Text>
         </Pressable>
       )}
 
-      {/* Content */}
       <Animated.View
         style={[
           styles.content,
-          {
-            opacity: fadeAnim,
-            transform: [{ translateX: slideAnim }],
-          },
+          { opacity: fadeAnim, transform: [{ translateX: slideAnim }] },
         ]}
       >
-        <View style={[styles.iconContainer, { backgroundColor: current.bgColor }]}>
-          <Ionicons name={current.icon as any} size={48} color={current.color} />
+        <View style={styles.iconContainer}>
+          <Ionicons
+            name={current.icon as any}
+            size={48}
+            color={uberColors.primary}
+          />
         </View>
-
         <Text style={styles.title}>{current.title}</Text>
         <Text style={styles.description}>{current.description}</Text>
       </Animated.View>
 
-      {/* Bottom section */}
       <View style={styles.bottom}>
-        {/* Dot indicators */}
         <View style={styles.indicatorRow}>
           {steps.map((_, index) => (
             <View
@@ -136,19 +136,17 @@ export default function OnboardingScreen() {
               style={[
                 styles.indicator,
                 index === step
-                  ? [styles.indicatorActive, { backgroundColor: current.color }]
+                  ? styles.indicatorActive
                   : styles.indicatorInactive,
               ]}
             />
           ))}
         </View>
 
-        {/* Next / Get Started button */}
         <Pressable
           onPress={handleNext}
           style={({ pressed }) => [
             styles.button,
-            { backgroundColor: current.color },
             pressed && styles.buttonPressed,
           ]}
         >
@@ -158,8 +156,8 @@ export default function OnboardingScreen() {
           <Ionicons
             name={isLastStep ? "checkmark-circle" : "arrow-forward"}
             size={20}
-            color="#fff"
-            style={styles.buttonIcon}
+            color={uberColors.onPrimary}
+            style={{ marginTop: 1 }}
           />
         </Pressable>
       </View>
@@ -168,56 +166,52 @@ export default function OnboardingScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f8fafc",
-  },
+  container: { flex: 1, backgroundColor: uberColors.canvas },
   skipButton: {
     position: "absolute",
     top: 16,
     right: 20,
     zIndex: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: uberSpacing.lg,
+    paddingVertical: uberSpacing.sm,
   },
   skipText: {
-    fontSize: 15,
-    color: "#94a3b8",
-    fontWeight: "600",
+    fontSize: uberTypography.bodyMd.fontSize,
+    color: uberColors.body,
+    fontWeight: "500",
+    fontFamily: uberTypography.bodyMd.fontFamily,
   },
   content: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: 36,
-    gap: 20,
+    gap: uberSpacing.xl,
   },
   iconContainer: {
     width: 120,
     height: 120,
     borderRadius: 60,
+    backgroundColor: uberColors.canvasSoft,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 8,
-    shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
+    marginBottom: uberSpacing.sm,
   },
   title: {
-    fontSize: 30,
-    fontWeight: "800",
-    color: "#0f172a",
+    fontSize: uberTypography.displayXl.fontSize,
+    fontWeight: uberTypography.displayXl.fontWeight,
+    color: uberColors.ink,
     textAlign: "center",
-    lineHeight: 38,
+    lineHeight: uberTypography.displayXl.lineHeight,
+    fontFamily: uberTypography.displayXl.fontFamily,
   },
   description: {
-    fontSize: 17,
-    lineHeight: 26,
-    color: "#475569",
+    fontSize: uberTypography.bodyLg.fontSize,
+    lineHeight: uberTypography.bodyLg.lineHeight,
+    color: uberColors.body,
     textAlign: "center",
-    paddingHorizontal: 8,
+    paddingHorizontal: uberSpacing.sm,
+    fontFamily: uberTypography.bodyLg.fontFamily,
   },
   bottom: {
     paddingHorizontal: 28,
@@ -225,46 +219,34 @@ const styles = StyleSheet.create({
     gap: 28,
     alignItems: "center",
   },
-  indicatorRow: {
-    flexDirection: "row",
-    gap: 10,
-  },
-  indicator: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
+  indicatorRow: { flexDirection: "row", gap: 10 },
+  indicator: { width: 10, height: 10, borderRadius: 5 },
   indicatorActive: {
     width: 28,
     borderRadius: 5,
+    backgroundColor: uberColors.primary,
   },
-  indicatorInactive: {
-    backgroundColor: "#cbd5e1",
-  },
+  indicatorInactive: { backgroundColor: uberColors.canvasSoft },
   button: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     width: "100%",
-    paddingVertical: 16,
-    borderRadius: 16,
-    gap: 8,
+    paddingVertical: uberSpacing.lg,
+    borderRadius: uberRounded.xl,
+    backgroundColor: uberColors.primary,
+    gap: uberSpacing.sm,
     shadowColor: "#000",
     shadowOpacity: 0.12,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 4 },
     elevation: 6,
   },
-  buttonPressed: {
-    opacity: 0.85,
-    transform: [{ scale: 0.97 }],
-  },
+  buttonPressed: { opacity: 0.85, transform: [{ scale: 0.97 }] },
   buttonText: {
-    color: "#fff",
-    fontSize: 17,
-    fontWeight: "700",
-  },
-  buttonIcon: {
-    marginTop: 1,
+    color: uberColors.onDark,
+    fontSize: uberTypography.buttonLarge.fontSize,
+    fontWeight: uberTypography.buttonLarge.fontWeight,
+    fontFamily: uberTypography.buttonLarge.fontFamily,
   },
 });

@@ -6,15 +6,23 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import DatePickerField from "@/components/DatePickerField";
-import PickerModal from "@/components/ui/picker-modal";
 import type { PickerItem } from "@/components/ui/picker-modal";
-import { getAllCustomers, insertInvoice, type Customer } from "@/db/index";
+import PickerModal from "@/components/ui/picker-modal";
+import { UberButton } from "@/components/ui/uber-button";
+import { UberHeader } from "@/components/ui/uber-header";
+import { UberInput } from "@/components/ui/uber-input";
+import {
+  uberColors,
+  uberRounded,
+  uberSpacing,
+  uberTypography,
+} from "@/constants/theme";
+import { getAllCustomers, getNextInvoiceNumber, insertInvoice, type Customer } from "@/db/index";
 
 export const options = { headerShown: false };
 
@@ -51,6 +59,10 @@ export default function CreateInvoiceScreen() {
 
   useEffect(() => {
     loadCustomers();
+    // Auto-populate invoice number from last ID
+    getNextInvoiceNumber().then((num) =>
+      setForm((prev) => ({ ...prev, invoiceNumber: num })),
+    );
   }, [loadCustomers]);
 
   const handleChange = (field: keyof typeof form, value: string) => {
@@ -60,7 +72,10 @@ export default function CreateInvoiceScreen() {
   const handleSubmit = async () => {
     const { invoiceNumber, customerName, amount } = form;
     if (!invoiceNumber.trim() || !customerName.trim() || !amount.trim()) {
-      Alert.alert("Missing details", "Invoice number, customer name, and amount are required.");
+      Alert.alert(
+        "Missing details",
+        "Invoice number, customer name, and amount are required.",
+      );
       return;
     }
     setIsSubmitting(true);
@@ -70,8 +85,8 @@ export default function CreateInvoiceScreen() {
         customerId: form.customerId ? Number(form.customerId) : null,
         customerName: form.customerName.trim(),
         customerEmail: form.customerEmail.trim() || null,
-        issueDate: form.issueDate.trim() || new Date().toISOString().slice(0, 10),
-        dueDate: form.dueDate.trim() || new Date().toISOString().slice(0, 10),
+        issueDate: form.issueDate.trim() || today,
+        dueDate: form.dueDate.trim() || today,
         amount: Number(form.amount),
         status: form.status.trim() || "draft",
         notes: form.notes.trim() || null,
@@ -93,50 +108,64 @@ export default function CreateInvoiceScreen() {
         selectedId={form.customerId}
         onSelect={(item) => {
           handleChange("customerId", item.id);
-          // Auto-fill customer details
           const customer = customerOptions.find((c) => c.id === item.id);
-          if (customer) {
-            handleChange("customerName", customer.label);
-          }
+          if (customer) handleChange("customerName", customer.label);
           setShowCustomerPicker(false);
         }}
-        onClose={() => { setShowCustomerPicker(false); loadCustomers(); }}
+        onClose={() => {
+          setShowCustomerPicker(false);
+          loadCustomers();
+        }}
         title="Select Customer"
         emptyText="No customers found. Create one first."
       />
+      <UberHeader title="New invoice" subtitle="Create a new invoice" />
       <ScrollView contentContainerStyle={styles.container}>
-        <Text style={styles.title}>Create invoice</Text>
-        <Text style={styles.subtitle}>Add the invoice details below.</Text>
         <View style={styles.formGroup}>
           <Text style={styles.label}>Customer</Text>
-          <Pressable style={styles.pickerButton} onPress={() => setShowCustomerPicker(true)}>
-            <Text style={[styles.pickerButtonText, !form.customerName && styles.pickerPlaceholder]}>
+          <Pressable
+            style={styles.pickerButton}
+            onPress={() => setShowCustomerPicker(true)}
+          >
+            <Text
+              style={[
+                styles.pickerButtonText,
+                !form.customerName && styles.pickerPlaceholder,
+              ]}
+            >
               {form.customerName || "Select a customer"}
             </Text>
             <Text style={styles.pickerArrow}>▼</Text>
           </Pressable>
         </View>
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Invoice number</Text>
-          <TextInput style={styles.input} value={form.invoiceNumber} onChangeText={(v) => handleChange("invoiceNumber", v)} placeholder="INV-1001" />
-        </View>
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Customer name</Text>
-          <TextInput style={styles.input} value={form.customerName} onChangeText={(v) => handleChange("customerName", v)} placeholder="Acme Ltd" />
-        </View>
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Customer email</Text>
-          <TextInput style={styles.input} value={form.customerEmail} onChangeText={(v) => handleChange("customerEmail", v)} placeholder="customer@example.com" keyboardType="email-address" />
-        </View>
+        <UberInput
+          label="Invoice number"
+          value={form.invoiceNumber}
+          onChangeText={(v) => handleChange("invoiceNumber", v)}
+          placeholder="INV-1001"
+        />
+        <UberInput
+          label="Customer name"
+          value={form.customerName}
+          onChangeText={(v) => handleChange("customerName", v)}
+          placeholder="Acme Ltd"
+        />
+        <UberInput
+          label="Customer email"
+          value={form.customerEmail}
+          onChangeText={(v) => handleChange("customerEmail", v)}
+          placeholder="customer@example.com"
+          keyboardType="email-address"
+        />
         <View style={styles.inlineRow}>
-          <View style={[styles.formGroup, styles.flexHalf]}>
+          <View style={{ flex: 1 }}>
             <DatePickerField
               label="Issue date"
               value={form.issueDate}
               onChange={(v) => handleChange("issueDate", v)}
             />
           </View>
-          <View style={[styles.formGroup, styles.flexHalf]}>
+          <View style={{ flex: 1 }}>
             <DatePickerField
               label="Due date"
               value={form.dueDate}
@@ -145,42 +174,84 @@ export default function CreateInvoiceScreen() {
           </View>
         </View>
         <View style={styles.inlineRow}>
-          <View style={[styles.formGroup, styles.flexHalf]}>
-            <Text style={styles.label}>Amount</Text>
-            <TextInput style={styles.input} value={form.amount} onChangeText={(v) => handleChange("amount", v)} placeholder="0.00" keyboardType="decimal-pad" />
-          </View>
-          <View style={[styles.formGroup, styles.flexHalf]}>
-            <Text style={styles.label}>Status</Text>
-            <TextInput style={styles.input} value={form.status} onChangeText={(v) => handleChange("status", v)} placeholder="draft" />
-          </View>
+          <UberInput
+            label="Amount"
+            value={form.amount}
+            onChangeText={(v) => handleChange("amount", v)}
+            placeholder="0.00"
+            keyboardType="decimal-pad"
+            containerStyle={{ flex: 1 }}
+          />
+          <UberInput
+            label="Status"
+            value={form.status}
+            onChangeText={(v) => handleChange("status", v)}
+            placeholder="draft"
+            containerStyle={{ flex: 1 }}
+          />
         </View>
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Notes</Text>
-          <TextInput style={[styles.input, styles.textArea]} value={form.notes} onChangeText={(v) => handleChange("notes", v)} placeholder="Optional notes" multiline numberOfLines={4} />
+        <UberInput
+          label="Notes"
+          value={form.notes}
+          onChangeText={(v) => handleChange("notes", v)}
+          placeholder="Optional notes"
+          multiline
+          numberOfLines={4}
+          containerStyle={styles.textArea}
+        />
+        <View style={styles.buttonStack}>
+          <UberButton
+            variant="subtle"
+            label="Cancel"
+            onPress={() => router.back()}
+          />
+          <UberButton
+            variant="primary"
+            label={isSubmitting ? "Saving..." : "Create invoice"}
+            onPress={handleSubmit}
+            disabled={isSubmitting}
+            loading={isSubmitting}
+          />
         </View>
-        <Pressable style={styles.button} onPress={handleSubmit} disabled={isSubmitting}>
-          <Text style={styles.buttonText}>{isSubmitting ? "Saving..." : "Create invoice"}</Text>
-        </Pressable>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: "#f8fafc" },
-  container: { padding: 20, paddingBottom: 40, gap: 12 },
-  title: { fontSize: 28, fontWeight: "700", color: "#0f172a" },
-  subtitle: { fontSize: 15, color: "#475569", marginBottom: 8 },
-  formGroup: { gap: 6 },
-  label: { fontSize: 14, fontWeight: "600", color: "#334155" },
-  input: { borderWidth: 1, borderColor: "#cbd5e1", borderRadius: 12, paddingHorizontal: 12, paddingVertical: 10, backgroundColor: "#fff" },
-  textArea: { minHeight: 100, textAlignVertical: "top" },
-  inlineRow: { flexDirection: "row", gap: 12 },
-  flexHalf: { flex: 1 },
-  pickerButton: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderWidth: 1, borderColor: "#cbd5e1", borderRadius: 12, paddingHorizontal: 12, paddingVertical: 12, backgroundColor: "#fff" },
-  pickerButtonText: { fontSize: 15, color: "#0f172a" },
-  pickerPlaceholder: { color: "#94a3b8" },
-  pickerArrow: { fontSize: 10, color: "#64748b" },
-  button: { marginTop: 8, backgroundColor: "#2563eb", borderRadius: 12, paddingVertical: 14, alignItems: "center" },
-  buttonText: { color: "#fff", fontWeight: "700", fontSize: 16 },
+  safeArea: { flex: 1, backgroundColor: uberColors.canvas },
+  container: {
+    padding: uberSpacing.lg,
+    paddingBottom: 40,
+    gap: uberSpacing.lg,
+  },
+  formGroup: { gap: uberSpacing.xs },
+  label: {
+    fontSize: uberTypography.bodySmStrong.fontSize,
+    fontWeight: uberTypography.bodySmStrong.fontWeight,
+    color: uberColors.ink,
+    fontFamily: uberTypography.bodySmStrong.fontFamily,
+  },
+  textArea: { minHeight: 100 },
+  inlineRow: { flexDirection: "row", gap: uberSpacing.md },
+  pickerButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: uberColors.canvasSoft,
+    borderRadius: uberRounded.md,
+    padding: uberSpacing.lg,
+  },
+  pickerButtonText: {
+    fontSize: uberTypography.bodyMd.fontSize,
+    color: uberColors.ink,
+    fontFamily: uberTypography.bodyMd.fontFamily,
+  },
+  pickerPlaceholder: { color: uberColors.mute },
+  pickerArrow: { fontSize: 10, color: uberColors.body },
+  buttonStack: {
+    flexDirection: "column",
+    gap: uberSpacing.sm,
+    marginTop: uberSpacing.lg,
+  },
 });

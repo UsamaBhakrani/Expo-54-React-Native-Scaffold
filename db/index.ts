@@ -88,7 +88,8 @@ export function initDatabase() {
       narration TEXT NOT NULL,
       debit REAL,
       credit REAL,
-      balance REAL NOT NULL
+      balance REAL NOT NULL,
+      purchase_number TEXT
     );
   `);
 }
@@ -143,6 +144,35 @@ export function getAllSuppliers() {
 export async function getSupplierById(id: number) {
   const results = await getDb().select().from(suppliers).where(eq(suppliers.id, id)).execute();
   return results[0];
+}
+
+// ---- Auto-increment helpers ----
+
+export async function getNextInvoiceNumber(): Promise<string> {
+  const result = await getDb()
+    .select({ maxId: sql<number>`COALESCE(MAX(id), 0) + 1` })
+    .from(invoices)
+    .execute();
+  const next = result[0]?.maxId ?? 1;
+  return `INV-${String(next).padStart(4, "0")}`;
+}
+
+export async function getNextSku(): Promise<string> {
+  const result = await getDb()
+    .select({ maxId: sql<number>`COALESCE(MAX(id), 0) + 1` })
+    .from(products)
+    .execute();
+  const next = result[0]?.maxId ?? 1;
+  return `SKU-${String(next).padStart(4, "0")}`;
+}
+
+export async function getNextPurchaseNumber(): Promise<string> {
+  const result = await getDb()
+    .select({ maxId: sql<number>`COALESCE(MAX(id), 0) + 1` })
+    .from(supplierTransactions)
+    .execute();
+  const next = result[0]?.maxId ?? 1;
+  return `PUR-${String(next).padStart(4, "0")}`;
 }
 
 // ---- Product CRUD ----

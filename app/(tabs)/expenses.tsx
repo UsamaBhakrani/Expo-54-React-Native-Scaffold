@@ -2,13 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useIsFocused } from "@react-navigation/native";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import {
-  FlatList,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import DateRangePicker from "@/components/DateRangePicker";
@@ -16,7 +10,10 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import TabAnimatedView from "@/components/ui/tab-animated-view";
 import { useTabDirection } from "@/components/ui/tab-direction";
+import { SkeletonCard, UberSkeleton } from "@/components/ui/uber-skeleton";
 import { getExpensesGroupedByCategory } from "@/db/index";
+import { uberColors, uberRounded, uberSpacing, uberTypography } from "@/constants/theme";
+import { UberEmptyState } from "@/components/ui/uber-empty-state";
 
 export default function ExpensesScreen() {
   const isFocused = useIsFocused();
@@ -28,14 +25,17 @@ export default function ExpensesScreen() {
     { category: string | null; total: number; count: number }[]
   >([]);
   const [totalExpenses, setTotalExpenses] = useState(0);
+  const [loading, setLoading] = useState(true);
 
   const loadData = useCallback(() => {
+    setLoading(true);
     const s = startDate || undefined;
     const e = endDate || undefined;
     getExpensesGroupedByCategory(s, e).then((result) => {
       setGroups(result);
       const all = result.reduce((sum, g) => sum + g.total, 0);
       setTotalExpenses(all);
+      setLoading(false);
     });
   }, [startDate, endDate]);
 
@@ -45,10 +45,6 @@ export default function ExpensesScreen() {
       setIndex(3);
     }
   }, [isFocused, loadData, setIndex]);
-
-  const openExpenseDetail = (id: number) => {
-    router.push(`/expense-detail?id=${id}` as any);
-  };
 
   const openCategoryExpenses = (category: string | null) => {
     router.push(
@@ -81,7 +77,7 @@ export default function ExpensesScreen() {
                 : "card-outline"
             }
             size={18}
-            color="#64748b"
+            color={uberColors.ink}
           />
         </View>
         <View style={styles.categoryInfo}>
@@ -100,52 +96,60 @@ export default function ExpensesScreen() {
     </Pressable>
   );
 
-  const renderEmpty = () => (
-    <View style={styles.emptyState}>
-      <Ionicons name="card-outline" size={48} color="#cbd5e1" />
-      <Text style={styles.emptyTitle}>No expenses found</Text>
-      <Text style={styles.emptyText}>
-        {startDate || endDate
-          ? "No expenses in this date range."
-          : "Tap the + button to add your first expense."}
-      </Text>
-    </View>
-  );
-
   return (
     <SafeAreaView style={styles.safeArea}>
       <TabAnimatedView style={{ flex: 1 }}>
         <ThemedView style={styles.container}>
-          <ThemedText type="title">Expenses</ThemedText>
+          <ThemedText type="displayLg">Expenses</ThemedText>
 
-          {/* Total Expenses Card */}
-          <View style={styles.totalCard}>
-            <Text style={styles.totalLabel}>
-              {startDate || endDate ? "Total (filtered)" : "Total Expenses"}
-            </Text>
-            <Text style={styles.totalValue}>
-              ${totalExpenses.toLocaleString(undefined, {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })}
-            </Text>
-          </View>
+          {loading ? (
+            <>
+              {/* Skeleton for total card */}
+              <UberSkeleton variant="rect" width="100%" height={100} style={{ borderRadius: uberRounded.xl }} />
+              <SkeletonCard variant="list" />
+            </>
+          ) : (
+            <>
+              {/* Total — Uber black card */}
+              <View style={styles.totalCard}>
+                <Text style={styles.totalLabel}>
+                  {startDate || endDate ? "Total (filtered)" : "Total expenses"}
+                </Text>
+                <Text style={styles.totalValue}>
+                  ${totalExpenses.toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+                </Text>
+              </View>
 
-          <DateRangePicker
-            startDate={startDate}
-            endDate={endDate}
-            onStartDateChange={setStartDate}
-            onEndDateChange={setEndDate}
-          />
+              <DateRangePicker
+                startDate={startDate}
+                endDate={endDate}
+                onStartDateChange={setStartDate}
+                onEndDateChange={setEndDate}
+              />
 
-          <FlatList
-            data={groups}
-            keyExtractor={(item) => item.category ?? "__uncategorized"}
-            renderItem={renderCategory}
-            ListEmptyComponent={renderEmpty}
-            contentContainerStyle={styles.listContent}
-            showsVerticalScrollIndicator={false}
-          />
+              <FlatList
+                data={groups}
+                keyExtractor={(item) => item.category ?? "__uncategorized"}
+                renderItem={renderCategory}
+                ListEmptyComponent={
+                  <UberEmptyState
+                    icon="card-outline"
+                    title="No expenses found"
+                    description={
+                      startDate || endDate
+                        ? "No expenses in this date range."
+                        : "Tap the + button on the home screen to add your first expense."
+                    }
+                  />
+                }
+                contentContainerStyle={styles.listContent}
+                showsVerticalScrollIndicator={false}
+              />
+            </>
+          )}
         </ThemedView>
       </TabAnimatedView>
     </SafeAreaView>
@@ -154,76 +158,62 @@ export default function ExpensesScreen() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
-  container: { flex: 1, padding: 16, gap: 12 },
+  container: { flex: 1, padding: uberSpacing.lg, gap: uberSpacing.md },
   totalCard: {
-    backgroundColor: "#2563eb",
-    borderRadius: 16,
-    padding: 20,
+    backgroundColor: uberColors.primary,
+    borderRadius: uberRounded.xl,
+    padding: uberSpacing["2xl"],
     alignItems: "center",
-    shadowColor: "#2563eb",
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
   },
   totalLabel: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: "rgba(255,255,255,0.8)",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
+    fontSize: uberTypography.caption.fontSize,
+    fontWeight: "500",
+    color: uberColors.mute,
+    fontFamily: uberTypography.caption.fontFamily,
   },
   totalValue: {
-    fontSize: 36,
-    fontWeight: "800",
-    color: "#fff",
-    marginTop: 4,
+    fontSize: uberTypography.displayMd.fontSize,
+    fontWeight: uberTypography.displayMd.fontWeight,
+    color: uberColors.onDark,
+    fontFamily: uberTypography.displayMd.fontFamily,
+    marginTop: uberSpacing.xxs,
   },
-  listContent: { flexGrow: 1, gap: 8, paddingBottom: 24 },
+  listContent: { flexGrow: 1, gap: uberSpacing.sm, paddingBottom: 24 },
   categoryCard: {
-    backgroundColor: "#fff",
-    borderRadius: 14,
-    padding: 14,
-    shadowColor: "#000",
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    backgroundColor: uberColors.canvasSoft,
+    borderRadius: uberRounded.lg,
+    padding: uberSpacing.lg,
   },
   categoryCardPressed: { opacity: 0.7 },
   categoryHeader: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: uberSpacing.md,
   },
   categoryIcon: {
     width: 40,
     height: 40,
-    borderRadius: 20,
-    backgroundColor: "#f1f5f9",
+    borderRadius: uberRounded.full,
+    backgroundColor: uberColors.canvas,
     alignItems: "center",
     justifyContent: "center",
   },
   categoryInfo: { flex: 1, gap: 2 },
-  categoryName: { fontSize: 15, fontWeight: "600", color: "#0f172a" },
-  categoryCount: { fontSize: 12, color: "#94a3b8" },
+  categoryName: {
+    fontSize: uberTypography.bodyMd.fontSize,
+    fontWeight: "600",
+    color: uberColors.ink,
+    fontFamily: uberTypography.bodyMd.fontFamily,
+  },
+  categoryCount: {
+    fontSize: uberTypography.caption.fontSize,
+    color: uberColors.body,
+    fontFamily: uberTypography.caption.fontFamily,
+  },
   categoryTotal: {
-    fontSize: 18,
+    fontSize: uberTypography.bodyMdStrong.fontSize,
     fontWeight: "700",
-    color: "#dc2626",
-  },
-  emptyState: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    paddingVertical: 80,
-  },
-  emptyTitle: { fontSize: 16, fontWeight: "600", color: "#64748b" },
-  emptyText: {
-    fontSize: 14,
-    color: "#94a3b8",
-    textAlign: "center",
-    paddingHorizontal: 40,
+    color: uberColors.ink,
+    fontFamily: uberTypography.bodyMdStrong.fontFamily,
   },
 });

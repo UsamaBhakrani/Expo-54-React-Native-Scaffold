@@ -1,4 +1,3 @@
-import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
@@ -14,17 +13,26 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import DatePickerField from "@/components/DatePickerField";
+import { ExpenseCategoryPicker } from "@/components/ui/expense-category-picker";
+import { UberButton } from "@/components/ui/uber-button";
+import { UberEmptyState } from "@/components/ui/uber-empty-state";
+import { UberHeader } from "@/components/ui/uber-header";
 import {
+  uberColors,
+  uberRounded,
+  uberSpacing,
+  uberTypography,
+} from "@/constants/theme";
+import {
+  deleteExpense,
   getExpenseById,
   getExpensesByCategory,
   updateExpense,
-  deleteExpense,
   type Expense,
 } from "@/db/index";
 
 export const options = { headerShown: false };
 
-// Shows either a single expense detail or a filtered list by category
 export default function ExpenseDetailScreen() {
   const { id, category } = useLocalSearchParams<{
     id: string;
@@ -57,7 +65,9 @@ export default function ExpenseDetailScreen() {
         }
       });
     } else if (category !== undefined) {
-      getExpensesByCategory(decodeURIComponent(category)).then(setCategoryExpenses);
+      getExpensesByCategory(decodeURIComponent(category)).then(
+        setCategoryExpenses,
+      );
     }
   }, [id, category]);
 
@@ -85,31 +95,34 @@ export default function ExpenseDetailScreen() {
 
   const handleDelete = () => {
     if (!id) return;
-    Alert.alert("Delete expense", "Are you sure you want to delete this expense?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: () => {
-          deleteExpense(Number(id));
-          router.back();
+    Alert.alert(
+      "Delete expense",
+      "Are you sure you want to delete this expense?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => {
+            deleteExpense(Number(id));
+            router.back();
+          },
         },
-      },
-    ]);
+      ],
+    );
   };
 
-  // If viewing by category, show filtered list
+  // Category list view
   if (category !== undefined && !id) {
     return (
       <SafeAreaView style={styles.safeArea}>
-        <View style={styles.header}>
-          <Pressable style={styles.backBtn} onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={24} color="#0f172a" />
-          </Pressable>
-          <Text style={styles.headerTitle}>
-            {category ? `${decodeURIComponent(category)} Expenses` : "Uncategorized"}
-          </Text>
-        </View>
+        <UberHeader
+          title={
+            category
+              ? `${decodeURIComponent(category)} Expenses`
+              : "Uncategorized"
+          }
+        />
         <FlatList
           data={categoryExpenses}
           keyExtractor={(item) => String(item.id)}
@@ -128,39 +141,38 @@ export default function ExpenseDetailScreen() {
                 <Text style={styles.expenseDate}>{item.expenseDate}</Text>
               </View>
               <Text style={styles.expenseAmount}>
-                ${item.amount.toLocaleString(undefined, {
+                $
+                {item.amount.toLocaleString(undefined, {
                   minimumFractionDigits: 2,
                 })}
               </Text>
             </Pressable>
           )}
           ListEmptyComponent={
-            <View style={styles.emptyState}>
-              <Text style={styles.emptyTitle}>No expenses found</Text>
-            </View>
+            <UberEmptyState icon="card-outline" title="No expenses found" />
           }
-          contentContainerStyle={{ padding: 16, gap: 8 }}
+          contentContainerStyle={styles.listContent}
         />
       </SafeAreaView>
     );
   }
 
-  // Single expense detail view
+  // Single expense detail
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.header}>
-        <Pressable style={styles.backBtn} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={24} color="#0f172a" />
-        </Pressable>
-        <Text style={styles.headerTitle}>Expense Details</Text>
-        <Pressable
-          style={styles.editBtn}
-          onPress={() => (isEditing ? handleSave() : setIsEditing(true))}
-        >
-          <Text style={styles.editBtnText}>{isEditing ? "Save" : "Edit"}</Text>
-        </Pressable>
-      </View>
-
+      <UberHeader
+        title="Expense details"
+        rightAction={
+          <Pressable
+            style={styles.editBtn}
+            onPress={() => (isEditing ? handleSave() : setIsEditing(true))}
+          >
+            <Text style={styles.editBtnText}>
+              {isEditing ? "Save" : "Edit"}
+            </Text>
+          </Pressable>
+        }
+      />
       <ScrollView contentContainerStyle={styles.container}>
         <View style={styles.formGroup}>
           <Text style={styles.label}>Title</Text>
@@ -171,17 +183,25 @@ export default function ExpenseDetailScreen() {
             editable={isEditing}
           />
         </View>
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Category</Text>
-          <TextInput
-            style={[styles.input, !isEditing && styles.inputReadonly]}
-            value={form.category}
-            onChangeText={(v) => handleChange("category", v)}
-            editable={isEditing}
-          />
-        </View>
+        {isEditing ? (
+          <View style={styles.formGroup}>
+            <ExpenseCategoryPicker
+              value={form.category}
+              onChange={(v) => handleChange("category", v)}
+            />
+          </View>
+        ) : (
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Category</Text>
+            <TextInput
+              style={[styles.input, styles.inputReadonly]}
+              value={form.category}
+              editable={false}
+            />
+          </View>
+        )}
         <View style={styles.inlineRow}>
-          <View style={[styles.formGroup, styles.flexHalf]}>
+          <View style={[styles.formGroup, { flex: 1 }]}>
             <Text style={styles.label}>Amount</Text>
             <TextInput
               style={[styles.input, !isEditing && styles.inputReadonly]}
@@ -191,7 +211,7 @@ export default function ExpenseDetailScreen() {
               editable={isEditing}
             />
           </View>
-          <View style={[styles.formGroup, styles.flexHalf]}>
+          <View style={{ flex: 1 }}>
             <DatePickerField
               label="Date"
               value={form.expenseDate}
@@ -202,7 +222,11 @@ export default function ExpenseDetailScreen() {
         <View style={styles.formGroup}>
           <Text style={styles.label}>Notes</Text>
           <TextInput
-            style={[styles.input, styles.textArea, !isEditing && styles.inputReadonly]}
+            style={[
+              styles.input,
+              styles.textArea,
+              !isEditing && styles.inputReadonly,
+            ]}
             value={form.notes}
             onChangeText={(v) => handleChange("notes", v)}
             multiline
@@ -210,104 +234,84 @@ export default function ExpenseDetailScreen() {
             editable={isEditing}
           />
         </View>
-
-        {isEditing ? (
-          <Pressable style={styles.deleteBtn} onPress={handleDelete}>
-            <Ionicons name="trash-outline" size={18} color="#fff" />
-            <Text style={styles.deleteBtnText}>Delete Expense</Text>
-          </Pressable>
-        ) : null}
+        {isEditing && (
+          <UberButton
+            variant="danger"
+            label="Delete expense"
+            icon="trash-outline"
+            onPress={handleDelete}
+          />
+        )}
       </ScrollView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: "#f8fafc" },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 12,
-    backgroundColor: "#fff",
-    borderBottomWidth: 1,
-    borderBottomColor: "#e2e8f0",
+  safeArea: { flex: 1, backgroundColor: uberColors.canvas },
+  listContent: { padding: uberSpacing.lg, gap: uberSpacing.sm },
+  container: {
+    padding: uberSpacing.lg,
+    paddingBottom: 40,
+    gap: uberSpacing.lg,
   },
-  backBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: "#f1f5f9",
-    alignItems: "center",
-    justifyContent: "center",
+  formGroup: { gap: uberSpacing.xs },
+  label: {
+    fontSize: uberTypography.bodySmStrong.fontSize,
+    fontWeight: uberTypography.bodySmStrong.fontWeight,
+    color: uberColors.ink,
+    fontFamily: uberTypography.bodySmStrong.fontFamily,
   },
-  headerTitle: { flex: 1, fontSize: 18, fontWeight: "700", color: "#0f172a" },
-  editBtn: {
-    backgroundColor: "#2563eb",
-    borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  editBtnText: { color: "#fff", fontWeight: "600", fontSize: 14 },
-  container: { padding: 20, paddingBottom: 40, gap: 12 },
-  formGroup: { gap: 6 },
-  label: { fontSize: 14, fontWeight: "600", color: "#334155" },
   input: {
-    borderWidth: 1,
-    borderColor: "#cbd5e1",
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    backgroundColor: "#fff",
-    fontSize: 15,
-    color: "#0f172a",
+    backgroundColor: uberColors.canvasSoft,
+    borderRadius: uberRounded.md,
+    padding: uberSpacing.lg,
+    fontSize: uberTypography.bodyMd.fontSize,
+    color: uberColors.ink,
+    fontFamily: uberTypography.bodyMd.fontFamily,
   },
   inputReadonly: {
-    backgroundColor: "#f8fafc",
-    color: "#475569",
+    backgroundColor: uberColors.canvasSofter,
+    color: uberColors.body,
   },
   textArea: { minHeight: 100, textAlignVertical: "top" },
-  inlineRow: { flexDirection: "row", gap: 12 },
-  flexHalf: { flex: 1 },
-  deleteBtn: {
-    marginTop: 16,
-    flexDirection: "row",
-    backgroundColor: "#dc2626",
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
+  inlineRow: { flexDirection: "row", gap: uberSpacing.md },
+  editBtn: {
+    backgroundColor: uberColors.primary,
+    borderRadius: uberRounded.pill,
+    paddingHorizontal: uberSpacing.lg,
+    paddingVertical: uberSpacing.sm,
   },
-  deleteBtnText: { color: "#fff", fontWeight: "700", fontSize: 16 },
+  editBtnText: {
+    color: uberColors.onPrimary,
+    fontWeight: "500",
+    fontSize: uberTypography.bodyMd.fontSize,
+  },
   expenseCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 14,
-    gap: 12,
-    shadowColor: "#000",
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    backgroundColor: uberColors.canvasSoft,
+    borderRadius: uberRounded.lg,
+    padding: uberSpacing.lg,
+    gap: uberSpacing.md,
   },
-  expenseCardPressed: { opacity: 0.7, backgroundColor: "#f1f5f9" },
-  expenseTitle: { fontSize: 15, fontWeight: "600", color: "#0f172a" },
-  expenseDate: { fontSize: 12, color: "#94a3b8", marginTop: 2 },
+  expenseCardPressed: { opacity: 0.7 },
+  expenseTitle: {
+    fontSize: uberTypography.bodyMd.fontSize,
+    fontWeight: "600",
+    color: uberColors.ink,
+    fontFamily: uberTypography.bodyMd.fontFamily,
+  },
+  expenseDate: {
+    fontSize: uberTypography.caption.fontSize,
+    color: uberColors.body,
+    fontFamily: uberTypography.caption.fontFamily,
+    marginTop: 2,
+  },
   expenseAmount: {
-    fontSize: 16,
+    fontSize: uberTypography.bodyMdStrong.fontSize,
     fontWeight: "700",
-    color: "#dc2626",
+    color: uberColors.ink,
+    fontFamily: uberTypography.bodyMdStrong.fontFamily,
   },
-  emptyState: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    paddingVertical: 80,
-  },
-  emptyTitle: { fontSize: 16, fontWeight: "600", color: "#64748b", marginTop: 6 },
 });

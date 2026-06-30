@@ -1,6 +1,12 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import DatePickerField from "@/components/DatePickerField";
+import {
+  uberColors,
+  uberRounded,
+  uberSpacing,
+  uberTypography,
+} from "@/constants/theme";
 
 type Props = {
   startDate: string;
@@ -40,7 +46,6 @@ export default function DateRangePicker({
     onStartDateChange("");
     onEndDateChange("");
   };
-
   const hasFilter = startDate || endDate;
 
   return (
@@ -49,9 +54,10 @@ export default function DateRangePicker({
         {presets.map((p) => (
           <Pressable
             key={p.label}
-            style={[
+            style={({ pressed }) => [
               styles.presetBtn,
               p.label === "All" && !hasFilter && styles.presetBtnActive,
+              pressed && styles.presetBtnPressed,
             ]}
             onPress={() => applyPreset(p.days)}
           >
@@ -66,19 +72,24 @@ export default function DateRangePicker({
           </Pressable>
         ))}
         {hasFilter ? (
-          <Pressable style={styles.clearBtn} onPress={clearFilter}>
+          <Pressable
+            style={({ pressed }) => [styles.clearBtn, pressed && styles.clearBtnPressed]}
+            onPress={clearFilter}
+          >
             <Text style={styles.clearText}>✕</Text>
           </Pressable>
         ) : null}
       </View>
       <View style={styles.inputRow}>
         <DatePickerField
+          compact
           label="From"
           value={startDate}
           onChange={onStartDateChange}
           placeholder="Start date"
         />
         <DatePickerField
+          compact
           label="To"
           value={endDate}
           onChange={onEndDateChange}
@@ -90,70 +101,36 @@ export default function DateRangePicker({
 }
 
 const styles = StyleSheet.create({
-  container: {
-    gap: 8,
-  },
-  presets: {
-    flexDirection: "row",
-    gap: 6,
-    alignItems: "center",
-  },
+  container: { gap: uberSpacing.sm },
+  presets: { flexDirection: "row", gap: uberSpacing.xs, alignItems: "center" },
   presetBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    backgroundColor: "#f1f5f9",
-    borderWidth: 1,
-    borderColor: "#e2e8f0",
+    paddingHorizontal: uberSpacing.md,
+    paddingVertical: uberSpacing.xs,
+    borderRadius: uberRounded.pill,
+    backgroundColor: uberColors.canvasSoft,
   },
-  presetBtnActive: {
-    backgroundColor: "#2563eb",
-    borderColor: "#2563eb",
-  },
+  presetBtnActive: { backgroundColor: uberColors.primary },
+  presetBtnPressed: { opacity: 0.7 },
   presetText: {
-    fontSize: 12,
+    fontSize: uberTypography.caption.fontSize,
     fontWeight: "600",
-    color: "#475569",
+    color: uberColors.body,
+    fontFamily: uberTypography.caption.fontFamily,
   },
-  presetTextActive: {
-    color: "#fff",
-  },
+  presetTextActive: { color: uberColors.onPrimary },
   clearBtn: {
     width: 28,
     height: 28,
-    borderRadius: 14,
-    backgroundColor: "#fee2e2",
+    borderRadius: uberRounded.full,
+    backgroundColor: uberColors.canvasSoft,
     alignItems: "center",
     justifyContent: "center",
   },
+  clearBtnPressed: { backgroundColor: uberColors.surfacePressed },
   clearText: {
-    fontSize: 12,
-    color: "#dc2626",
+    fontSize: uberTypography.caption.fontSize,
+    color: uberColors.ink,
     fontWeight: "700",
   },
-  inputRow: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  inputGroup: {
-    flex: 1,
-    gap: 4,
-  },
-  label: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: "#64748b",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: "#e2e8f0",
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    fontSize: 13,
-    fontFamily: "monospace",
-    backgroundColor: "#fff",
-  },
+  inputRow: { flexDirection: "column", gap: uberSpacing.md },
 });

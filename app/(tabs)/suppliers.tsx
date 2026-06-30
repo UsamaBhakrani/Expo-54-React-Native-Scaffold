@@ -10,7 +10,10 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import TabAnimatedView from "@/components/ui/tab-animated-view";
 import { useTabDirection } from "@/components/ui/tab-direction";
+import { SkeletonCard } from "@/components/ui/uber-skeleton";
 import { getAllSuppliers, getSupplierBalance, type Supplier } from "@/db/index";
+import { uberColors, uberRounded, uberSpacing, uberTypography } from "@/constants/theme";
+import { UberEmptyState } from "@/components/ui/uber-empty-state";
 
 export default function SuppliersScreen() {
   const isFocused = useIsFocused();
@@ -21,8 +24,10 @@ export default function SuppliersScreen() {
   const [supplierList, setSupplierList] = useState<
     (Supplier & { balance: number })[]
   >([]);
+  const [loading, setLoading] = useState(true);
 
   const loadData = useCallback(() => {
+    setLoading(true);
     getAllSuppliers().then((suppliers) => {
       Promise.all(
         suppliers.map((s) =>
@@ -32,7 +37,10 @@ export default function SuppliersScreen() {
             endDate || undefined,
           ).then((balance) => ({ ...s, balance })),
         ),
-      ).then(setSupplierList);
+      ).then((data) => {
+        setSupplierList(data);
+        setLoading(false);
+      });
     });
   }, [startDate, endDate]);
 
@@ -61,18 +69,13 @@ export default function SuppliersScreen() {
       ]}
       onPress={() => openLedger(item.id)}
     >
-      <View style={styles.supplierAvatar}>
-        <Ionicons name="business-outline" size={22} color="#0f766e" />
+      <View style={styles.supplierIcon}>
+        <Ionicons name="business-outline" size={20} color={uberColors.ink} />
       </View>
       <View style={styles.supplierInfo}>
         <Text style={styles.supplierName}>{item.companyName}</Text>
         {item.contactName ? (
           <Text style={styles.supplierDetail}>{item.contactName}</Text>
-        ) : null}
-        {item.email || item.phone ? (
-          <Text style={styles.supplierSubDetail}>
-            {[item.email, item.phone].filter(Boolean).join(" · ")}
-          </Text>
         ) : null}
       </View>
       <View style={styles.balanceSection}>
@@ -81,7 +84,6 @@ export default function SuppliersScreen() {
             styles.balanceAmount,
             item.balance > 0 && styles.balanceDebit,
             item.balance < 0 && styles.balanceCredit,
-            item.balance === 0 && styles.balanceZero,
           ]}
         >
           {item.balance > 0
@@ -94,25 +96,15 @@ export default function SuppliersScreen() {
           {item.balance > 0 ? "Dr" : item.balance < 0 ? "Cr" : ""}
         </Text>
       </View>
-      <Ionicons name="chevron-forward" size={18} color="#94a3b8" />
+      <Ionicons name="chevron-forward" size={16} color={uberColors.mute} />
     </Pressable>
-  );
-
-  const renderEmpty = () => (
-    <View style={styles.emptyState}>
-      <Ionicons name="briefcase-outline" size={48} color="#94a3b8" />
-      <ThemedText style={styles.emptyTitle}>No suppliers yet</ThemedText>
-      <ThemedText style={styles.emptyText}>
-        Tap the + button on the home screen to add your first supplier.
-      </ThemedText>
-    </View>
   );
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <TabAnimatedView style={{ flex: 1 }}>
         <ThemedView style={styles.container}>
-          <ThemedText type="title">Suppliers</ThemedText>
+          <ThemedText type="displayLg">Suppliers</ThemedText>
 
           <DateRangePicker
             startDate={startDate}
@@ -121,14 +113,24 @@ export default function SuppliersScreen() {
             onEndDateChange={setEndDate}
           />
 
-          <FlatList
-            data={supplierList}
-            keyExtractor={(item) => String(item.id)}
-            renderItem={renderSupplier}
-            ListEmptyComponent={renderEmpty}
-            contentContainerStyle={styles.listContent}
-            showsVerticalScrollIndicator={false}
-          />
+          {loading ? (
+            <SkeletonCard variant="list" />
+          ) : (
+            <FlatList
+              data={supplierList}
+              keyExtractor={(item) => String(item.id)}
+              renderItem={renderSupplier}
+              ListEmptyComponent={
+                <UberEmptyState
+                  icon="briefcase-outline"
+                  title="No suppliers yet"
+                  description="Tap the + button on the home screen to add your first supplier."
+                />
+              }
+              contentContainerStyle={styles.listContent}
+              showsVerticalScrollIndicator={false}
+            />
+          )}
         </ThemedView>
       </TabAnimatedView>
     </SafeAreaView>
@@ -137,66 +139,50 @@ export default function SuppliersScreen() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
-  container: { flex: 1, padding: 16, gap: 12 },
-  listContent: { flexGrow: 1, gap: 10, paddingBottom: 24 },
+  container: { flex: 1, padding: uberSpacing.lg, gap: uberSpacing.md },
+  listContent: { flexGrow: 1, gap: uberSpacing.sm, paddingBottom: 24 },
   supplierCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
-    borderRadius: 14,
-    padding: 14,
-    gap: 14,
-    shadowColor: "#000",
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    backgroundColor: uberColors.canvasSoft,
+    borderRadius: uberRounded.lg,
+    padding: uberSpacing.lg,
+    gap: uberSpacing.md,
   },
-  supplierCardPressed: { opacity: 0.7, backgroundColor: "#f1f5f9" },
-  supplierAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "#ecfdf5",
+  supplierCardPressed: { opacity: 0.7 },
+  supplierIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: uberRounded.full,
+    backgroundColor: uberColors.canvas,
     alignItems: "center",
     justifyContent: "center",
   },
   supplierInfo: { flex: 1, gap: 2 },
-  supplierName: { fontSize: 16, fontWeight: "600", color: "#0f172a" },
-  supplierDetail: { fontSize: 13, color: "#475569" },
-  supplierSubDetail: { fontSize: 12, color: "#94a3b8", marginTop: 1 },
+  supplierName: {
+    fontSize: uberTypography.bodyMd.fontSize,
+    fontWeight: "600",
+    color: uberColors.ink,
+    fontFamily: uberTypography.bodyMd.fontFamily,
+  },
+  supplierDetail: {
+    fontSize: uberTypography.bodySm.fontSize,
+    color: uberColors.body,
+    fontFamily: uberTypography.bodySm.fontFamily,
+  },
   balanceSection: { alignItems: "flex-end", gap: 1 },
   balanceAmount: {
-    fontSize: 15,
+    fontSize: uberTypography.bodyMdStrong.fontSize,
     fontWeight: "700",
-    fontFamily: "monospace",
+    fontFamily: "UberMoveText, monospace",
   },
-  balanceDebit: { color: "#dc2626" },
-  balanceCredit: { color: "#16a34a" },
-  balanceZero: { color: "#94a3b8" },
+  balanceDebit: { color: uberColors.ink },
+  balanceCredit: { color: uberColors.body },
   balanceLabel: {
     fontSize: 10,
     fontWeight: "700",
-    color: "#94a3b8",
+    color: uberColors.mute,
     textTransform: "uppercase",
-  },
-  emptyState: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    paddingVertical: 60,
-  },
-  emptyTitle: {
-    fontSize: 17,
-    fontWeight: "600",
-    color: "#64748b",
-    marginTop: 8,
-  },
-  emptyText: {
-    fontSize: 14,
-    color: "#94a3b8",
-    textAlign: "center",
-    paddingHorizontal: 40,
+    fontFamily: uberTypography.caption.fontFamily,
   },
 });

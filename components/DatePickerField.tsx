@@ -1,21 +1,16 @@
-import DateTimePicker, {
-  type DateTimePickerEvent,
-} from "@react-native-community/datetimepicker";
+import { Ionicons } from "@expo/vector-icons";
+import DateTimePicker, { type DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import React, { useState } from "react";
-import {
-  Modal,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Modal, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+
+import { uberColors, uberRounded, uberSpacing, uberTypography } from "@/constants/theme";
 
 type DatePickerFieldProps = {
   label: string;
-  value: string; // YYYY-MM-DD format
+  value: string;
   onChange: (dateString: string) => void;
   placeholder?: string;
+  compact?: boolean;
 };
 
 function parseDate(dateString: string): Date {
@@ -31,116 +26,118 @@ function formatDate(date: Date): string {
 }
 
 export default function DatePickerField({
-  label,
-  value,
-  onChange,
-  placeholder = "Select date",
+  label, value, onChange, placeholder = "Select date", compact = false,
 }: DatePickerFieldProps) {
   const [show, setShow] = useState(false);
   const currentDate = parseDate(value);
 
   const handleChange = (_event: DateTimePickerEvent, selectedDate?: Date) => {
-    if (Platform.OS === "android") {
-      setShow(false);
-    }
-    if (selectedDate) {
-      onChange(formatDate(selectedDate));
-    }
+    if (Platform.OS === "android") setShow(false);
+    if (selectedDate) onChange(formatDate(selectedDate));
   };
 
-  const handleDismiss = () => {
-    setShow(false);
-  };
-
+  const handleDismiss = () => setShow(false);
   const displayValue = value || placeholder;
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>{label}</Text>
-      <Pressable style={styles.pickerButton} onPress={() => setShow(true)}>
-        <Text style={[styles.pickerText, !value && styles.placeholder]}>
+      <Text style={[styles.label, compact && styles.labelCompact]}>{label}</Text>
+      <Pressable style={({ pressed }) => [styles.pickerButton, compact && styles.pickerButtonCompact, pressed && styles.pickerButtonPressed]} onPress={() => setShow(true)}>
+        <Ionicons name="calendar-outline" size={compact ? 13 : 16} color={uberColors.mute} />
+        <Text style={[styles.pickerText, !value && styles.placeholder, compact && styles.pickerTextCompact]}>
           {displayValue}
         </Text>
+        <Ionicons name="chevron-down" size={compact ? 11 : 14} color={uberColors.mute} />
       </Pressable>
 
       {Platform.OS === "ios" ? (
-        <Modal
-          visible={show}
-          transparent
-          animationType="fade"
-          onRequestClose={handleDismiss}
-        >
+        <Modal visible={show} transparent animationType="fade" onRequestClose={handleDismiss}>
           <Pressable style={styles.overlay} onPress={handleDismiss}>
             <Pressable style={styles.iosPickerContainer}>
               <View style={styles.iosPickerHeader}>
-                <Pressable onPress={handleDismiss}>
-                  <Text style={styles.cancelText}>Cancel</Text>
-                </Pressable>
+                <Pressable onPress={handleDismiss}><Text style={styles.cancelText}>Cancel</Text></Pressable>
                 <Text style={styles.iosPickerTitle}>{label}</Text>
-                <Pressable onPress={() => setShow(false)}>
-                  <Text style={styles.doneText}>Done</Text>
-                </Pressable>
+                <Pressable onPress={() => setShow(false)}><Text style={styles.doneText}>Done</Text></Pressable>
               </View>
-              <DateTimePicker
-                value={currentDate}
-                mode="date"
-                display="spinner"
-                onChange={handleChange}
-                themeVariant="light"
-              />
+              <DateTimePicker value={currentDate} mode="date" display="spinner" onChange={handleChange} themeVariant="light" />
             </Pressable>
           </Pressable>
         </Modal>
       ) : show ? (
-        <DateTimePicker
-          value={currentDate}
-          mode="date"
-          display="default"
-          onChange={handleChange}
-        />
+        <DateTimePicker value={currentDate} mode="date" display="default" onChange={handleChange} />
       ) : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { gap: 4 },
-  label: { fontSize: 13, fontWeight: "600", color: "#334155" },
-  pickerButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    borderWidth: 1,
-    borderColor: "#cbd5e1",
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    backgroundColor: "#fff",
+  container: { gap: uberSpacing.xs },
+  label: {
+    fontSize: uberTypography.bodySmStrong.fontSize,
+    fontWeight: uberTypography.bodySmStrong.fontWeight,
+    color: uberColors.ink,
+    fontFamily: uberTypography.bodySmStrong.fontFamily,
   },
-  pickerText: { fontSize: 14, color: "#0f172a", flex: 1 },
-  placeholder: { color: "#94a3b8" },
+  labelCompact: {
+    fontSize: 11,
+    color: uberColors.body,
+  },
 
+  pickerButton: {
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: uberSpacing.sm,
+    backgroundColor: uberColors.canvasSoft, borderRadius: uberRounded.md,
+    padding: uberSpacing.lg,
+  },
+  pickerButtonPressed: {
+    backgroundColor: uberColors.surfacePressed,
+  },
+  pickerButtonCompact: {
+    paddingVertical: uberSpacing.sm,
+    paddingHorizontal: uberSpacing.md,
+    borderRadius: uberRounded.pill,
+  },
+
+  pickerText: {
+    fontSize: uberTypography.bodyMd.fontSize, color: uberColors.ink,
+    fontFamily: uberTypography.bodyMd.fontFamily, flex: 1,
+  },
+  pickerTextCompact: {
+    fontSize: uberTypography.caption.fontSize,
+  },
+  placeholder: { color: uberColors.mute },
+
+  // Uber black/white iOS picker overlay
   overlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.3)",
-    justifyContent: "flex-end",
+    flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end",
   },
   iosPickerContainer: {
-    backgroundColor: "#fff",
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    paddingBottom: 30,
+    backgroundColor: uberColors.canvas,
+    borderTopLeftRadius: uberRounded.xl, borderTopRightRadius: uberRounded.xl,
+    paddingBottom: 34,
+    shadowColor: "#000",
+    shadowOpacity: 0.16,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: -4 },
+    elevation: 10,
   },
   iosPickerHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#e5e7eb",
+    flexDirection: "row", justifyContent: "space-between", alignItems: "center",
+    paddingHorizontal: uberSpacing.lg, paddingVertical: uberSpacing.lg,
+    borderBottomWidth: 1, borderBottomColor: uberColors.canvasSoft,
   },
-  iosPickerTitle: { fontSize: 16, fontWeight: "700", color: "#0f172a" },
-  cancelText: { fontSize: 16, color: "#64748b" },
-  doneText: { fontSize: 16, color: "#2563eb", fontWeight: "600" },
+  iosPickerTitle: {
+    fontSize: uberTypography.bodyMdStrong.fontSize,
+    fontWeight: uberTypography.bodyMdStrong.fontWeight,
+    color: uberColors.ink, fontFamily: uberTypography.bodyMdStrong.fontFamily,
+  },
+  cancelText: {
+    fontSize: uberTypography.bodyMd.fontSize,
+    color: uberColors.body,
+    fontFamily: uberTypography.bodyMd.fontFamily,
+  },
+  doneText: {
+    fontSize: uberTypography.bodyMdStrong.fontSize,
+    color: uberColors.ink, fontWeight: "600",
+    fontFamily: uberTypography.bodyMdStrong.fontFamily,
+  },
 });

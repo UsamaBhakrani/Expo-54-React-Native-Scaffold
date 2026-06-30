@@ -1,22 +1,30 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useIsFocused } from "@react-navigation/native";
 import { useCallback, useEffect, useState } from "react";
-import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { FlatList, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import TabAnimatedView from "@/components/ui/tab-animated-view";
 import { useTabDirection } from "@/components/ui/tab-direction";
+import { SkeletonCard } from "@/components/ui/uber-skeleton";
 import { getAllProducts, type Product } from "@/db/index";
+import { uberColors, uberRounded, uberSpacing, uberTypography } from "@/constants/theme";
+import { UberEmptyState } from "@/components/ui/uber-empty-state";
 
 export default function ProductsScreen() {
   const isFocused = useIsFocused();
   const { setIndex } = useTabDirection();
   const [productList, setProductList] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const loadData = useCallback(() => {
-    getAllProducts().then(setProductList);
+    setLoading(true);
+    getAllProducts().then((data) => {
+      setProductList(data);
+      setLoading(false);
+    });
   }, []);
 
   useEffect(() => {
@@ -31,8 +39,8 @@ export default function ProductsScreen() {
 
   const renderProduct = ({ item }: { item: Product }) => (
     <View style={styles.productCard}>
-      <View style={styles.productAvatar}>
-        <Ionicons name="cube-outline" size={22} color="#f97316" />
+      <View style={styles.productIcon}>
+        <Ionicons name="cube-outline" size={20} color={uberColors.ink} />
       </View>
       <View style={styles.productInfo}>
         <Text style={styles.productName}>{item.name}</Text>
@@ -62,30 +70,30 @@ export default function ProductsScreen() {
     </View>
   );
 
-  const renderEmpty = () => (
-    <View style={styles.emptyState}>
-      <Ionicons name="cube-outline" size={48} color="#94a3b8" />
-      <ThemedText style={styles.emptyTitle}>No products yet</ThemedText>
-      <ThemedText style={styles.emptyText}>
-        Tap the + button on the home screen to add your first product.
-      </ThemedText>
-    </View>
-  );
-
   return (
     <SafeAreaView style={styles.safeArea}>
       <TabAnimatedView style={{ flex: 1 }}>
         <ThemedView style={styles.container}>
-          <ThemedText type="title">Products</ThemedText>
+          <ThemedText type="displayLg">Products</ThemedText>
 
-          <FlatList
-            data={productList}
-            keyExtractor={(item) => String(item.id)}
-            renderItem={renderProduct}
-            ListEmptyComponent={renderEmpty}
-            contentContainerStyle={styles.listContent}
-            showsVerticalScrollIndicator={false}
-          />
+          {loading ? (
+            <SkeletonCard variant="list" />
+          ) : (
+            <FlatList
+              data={productList}
+              keyExtractor={(item) => String(item.id)}
+              renderItem={renderProduct}
+              ListEmptyComponent={
+                <UberEmptyState
+                  icon="cube-outline"
+                  title="No products yet"
+                  description="Tap the + button on the home screen to add your first product."
+                />
+              }
+              contentContainerStyle={styles.listContent}
+              showsVerticalScrollIndicator={false}
+            />
+          )}
         </ThemedView>
       </TabAnimatedView>
     </SafeAreaView>
@@ -94,65 +102,53 @@ export default function ProductsScreen() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
-  container: { flex: 1, padding: 16, gap: 12 },
-  listContent: { flexGrow: 1, gap: 10, paddingBottom: 24 },
+  container: { flex: 1, padding: uberSpacing.lg, gap: uberSpacing.md },
+  listContent: { flexGrow: 1, gap: uberSpacing.sm, paddingBottom: 24 },
   productCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
-    borderRadius: 14,
-    padding: 14,
-    gap: 14,
-    shadowColor: "#000",
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    backgroundColor: uberColors.canvasSoft,
+    borderRadius: uberRounded.lg,
+    padding: uberSpacing.lg,
+    gap: uberSpacing.md,
   },
-  productAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "#fff7ed",
+  productIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: uberRounded.full,
+    backgroundColor: uberColors.canvas,
     alignItems: "center",
     justifyContent: "center",
   },
   productInfo: { flex: 1, gap: 2 },
-  productName: { fontSize: 16, fontWeight: "600", color: "#0f172a" },
-  productDetail: { fontSize: 12, color: "#64748b", marginTop: 1 },
-  productMeta: { alignItems: "flex-end", gap: 4 },
+  productName: {
+    fontSize: uberTypography.bodyMd.fontSize,
+    fontWeight: "600",
+    color: uberColors.ink,
+    fontFamily: uberTypography.bodyMd.fontFamily,
+  },
+  productDetail: {
+    fontSize: uberTypography.caption.fontSize,
+    color: uberColors.body,
+    fontFamily: uberTypography.caption.fontFamily,
+    marginTop: 1,
+  },
+  productMeta: { alignItems: "flex-end", gap: 2 },
   productPrice: {
-    fontSize: 16,
+    fontSize: uberTypography.bodyMdStrong.fontSize,
     fontWeight: "700",
-    color: "#0f172a",
+    color: uberColors.ink,
+    fontFamily: uberTypography.bodyMdStrong.fontFamily,
   },
   stockBadge: {
     fontSize: 11,
     fontWeight: "700",
-    paddingHorizontal: 8,
+    paddingHorizontal: uberSpacing.sm,
     paddingVertical: 2,
-    borderRadius: 6,
+    borderRadius: uberRounded.pill,
     overflow: "hidden",
+    fontFamily: uberTypography.caption.fontFamily,
   },
-  stockIn: { backgroundColor: "#f0fdf4", color: "#16a34a" },
-  stockOut: { backgroundColor: "#fef2f2", color: "#dc2626" },
-  emptyState: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    paddingVertical: 60,
-  },
-  emptyTitle: {
-    fontSize: 17,
-    fontWeight: "600",
-    color: "#64748b",
-    marginTop: 8,
-  },
-  emptyText: {
-    fontSize: 14,
-    color: "#94a3b8",
-    textAlign: "center",
-    paddingHorizontal: 40,
-  },
+  stockIn: { backgroundColor: uberColors.canvas, color: uberColors.ink },
+  stockOut: { backgroundColor: uberColors.canvasSoft, color: uberColors.body },
 });

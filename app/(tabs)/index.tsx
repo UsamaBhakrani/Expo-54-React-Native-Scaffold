@@ -10,14 +10,12 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import TabAnimatedView from "@/components/ui/tab-animated-view";
 import { useTabDirection } from "@/components/ui/tab-direction";
-import { useColorScheme } from "@/hooks/use-color-scheme";
+import { uberColors, uberRounded, uberSpacing } from "@/constants/theme";
 
 export default function HomeScreen() {
   const isFocused = useIsFocused();
   const { setIndex } = useTabDirection();
   const router = useRouter();
-  const scheme = useColorScheme();
-  const isDark = scheme === "dark";
 
   useEffect(() => {
     if (isFocused) setIndex(0);
@@ -28,13 +26,13 @@ export default function HomeScreen() {
       <TabAnimatedView style={{ flex: 1 }}>
         <ThemedView style={styles.container}>
           <View style={styles.header}>
-            <ThemedText type="title">Home</ThemedText>
+            <ThemedText type="displayLg">Home</ThemedText>
             <Pressable
-              style={[styles.avatarBtn, isDark && styles.avatarBtnDark]}
+              style={styles.avatarBtn}
               onPress={() => router.push("/settings" as any)}
               accessibilityLabel="Open settings"
             >
-              <Ionicons name="person-circle" size={32} color={isDark ? "#94a3b8" : "#64748b"} />
+              <Ionicons name="person-circle" size={28} color={uberColors.body} />
             </Pressable>
           </View>
           <HomeDashboard />
@@ -50,8 +48,8 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    padding: 16,
-    gap: 16,
+    padding: uberSpacing.lg,
+    gap: uberSpacing.lg,
   },
   header: {
     flexDirection: "row",
@@ -61,17 +59,9 @@ const styles = StyleSheet.create({
   avatarBtn: {
     width: 40,
     height: 40,
-    borderRadius: 20,
-    backgroundColor: "#f1f5f9",
+    borderRadius: uberRounded.full,
+    backgroundColor: uberColors.canvasSoft,
     alignItems: "center",
     justifyContent: "center",
-  },
-  avatarBtnDark: {
-    backgroundColor: "#1e293b",
-  },
-  subtitle: {
-    fontSize: 18,
-    marginTop: 16,
-    lineHeight: 26,
   },
 });

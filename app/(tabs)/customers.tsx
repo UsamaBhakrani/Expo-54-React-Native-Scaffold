@@ -1,22 +1,30 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useIsFocused } from "@react-navigation/native";
 import { useCallback, useEffect, useState } from "react";
-import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
+import { FlatList, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import TabAnimatedView from "@/components/ui/tab-animated-view";
 import { useTabDirection } from "@/components/ui/tab-direction";
+import { SkeletonCard } from "@/components/ui/uber-skeleton";
 import { getAllCustomers, type Customer } from "@/db/index";
+import { uberColors, uberRounded, uberSpacing, uberTypography } from "@/constants/theme";
+import { UberEmptyState } from "@/components/ui/uber-empty-state";
 
 export default function CustomersScreen() {
   const isFocused = useIsFocused();
   const { setIndex } = useTabDirection();
   const [customerList, setCustomerList] = useState<Customer[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const loadData = useCallback(() => {
-    getAllCustomers().then(setCustomerList);
+    setLoading(true);
+    getAllCustomers().then((data) => {
+      setCustomerList(data);
+      setLoading(false);
+    });
   }, []);
 
   useEffect(() => {
@@ -31,29 +39,16 @@ export default function CustomersScreen() {
 
   const renderCustomer = ({ item }: { item: Customer }) => (
     <View style={styles.customerCard}>
-      <View style={styles.customerAvatar}>
-        <Ionicons name="people-outline" size={22} color="#7c3aed" />
+      <View style={styles.customerIcon}>
+        <Ionicons name="people-outline" size={20} color={uberColors.ink} />
       </View>
       <View style={styles.customerInfo}>
         <Text style={styles.customerName}>{item.name}</Text>
         {item.email ? (
           <Text style={styles.customerDetail}>{item.email}</Text>
         ) : null}
-        {item.phone ? (
-          <Text style={styles.customerSubDetail}>{item.phone}</Text>
-        ) : null}
       </View>
-      <Ionicons name="chevron-forward" size={18} color="#94a3b8" />
-    </View>
-  );
-
-  const renderEmpty = () => (
-    <View style={styles.emptyState}>
-      <Ionicons name="people-outline" size={48} color="#94a3b8" />
-      <ThemedText style={styles.emptyTitle}>No customers yet</ThemedText>
-      <ThemedText style={styles.emptyText}>
-        Tap the + button on the home screen to add your first customer.
-      </ThemedText>
+      <Ionicons name="chevron-forward" size={16} color={uberColors.mute} />
     </View>
   );
 
@@ -61,16 +56,26 @@ export default function CustomersScreen() {
     <SafeAreaView style={styles.safeArea}>
       <TabAnimatedView style={{ flex: 1 }}>
         <ThemedView style={styles.container}>
-          <ThemedText type="title">Customers</ThemedText>
+          <ThemedText type="displayLg">Customers</ThemedText>
 
-          <FlatList
-            data={customerList}
-            keyExtractor={(item) => String(item.id)}
-            renderItem={renderCustomer}
-            ListEmptyComponent={renderEmpty}
-            contentContainerStyle={styles.listContent}
-            showsVerticalScrollIndicator={false}
-          />
+          {loading ? (
+            <SkeletonCard variant="list" />
+          ) : (
+            <FlatList
+              data={customerList}
+              keyExtractor={(item) => String(item.id)}
+              renderItem={renderCustomer}
+              ListEmptyComponent={
+                <UberEmptyState
+                  icon="people-outline"
+                  title="No customers yet"
+                  description="Tap the + button on the home screen to add your first customer."
+                />
+              }
+              contentContainerStyle={styles.listContent}
+              showsVerticalScrollIndicator={false}
+            />
+          )}
         </ThemedView>
       </TabAnimatedView>
     </SafeAreaView>
@@ -79,50 +84,34 @@ export default function CustomersScreen() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
-  container: { flex: 1, padding: 16, gap: 12 },
-  listContent: { flexGrow: 1, gap: 10, paddingBottom: 24 },
+  container: { flex: 1, padding: uberSpacing.lg, gap: uberSpacing.md },
+  listContent: { flexGrow: 1, gap: uberSpacing.sm, paddingBottom: 24 },
   customerCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
-    borderRadius: 14,
-    padding: 14,
-    gap: 14,
-    shadowColor: "#000",
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    backgroundColor: uberColors.canvasSoft,
+    borderRadius: uberRounded.lg,
+    padding: uberSpacing.lg,
+    gap: uberSpacing.md,
   },
-  customerAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "#f5f3ff",
+  customerIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: uberRounded.full,
+    backgroundColor: uberColors.canvas,
     alignItems: "center",
     justifyContent: "center",
   },
   customerInfo: { flex: 1, gap: 2 },
-  customerName: { fontSize: 16, fontWeight: "600", color: "#0f172a" },
-  customerDetail: { fontSize: 13, color: "#475569" },
-  customerSubDetail: { fontSize: 12, color: "#94a3b8", marginTop: 1 },
-  emptyState: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    paddingVertical: 60,
-  },
-  emptyTitle: {
-    fontSize: 17,
+  customerName: {
+    fontSize: uberTypography.bodyMd.fontSize,
     fontWeight: "600",
-    color: "#64748b",
-    marginTop: 8,
+    color: uberColors.ink,
+    fontFamily: uberTypography.bodyMd.fontFamily,
   },
-  emptyText: {
-    fontSize: 14,
-    color: "#94a3b8",
-    textAlign: "center",
-    paddingHorizontal: 40,
+  customerDetail: {
+    fontSize: uberTypography.bodySm.fontSize,
+    color: uberColors.body,
+    fontFamily: uberTypography.bodySm.fontFamily,
   },
 });

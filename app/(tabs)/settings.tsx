@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -7,10 +8,12 @@ import { ThemedView } from "@/components/themed-view";
 import TabAnimatedView from "@/components/ui/tab-animated-view";
 import { useThemeContext } from "@/contexts/ThemeContext";
 import { useColorScheme } from "@/hooks/use-color-scheme";
-import { purgeDatabase } from "@/db/index";
+import { purgeDatabase, exportDataAsJson, getSchemaSQL } from "@/db/index";
 import { seedDatabase } from "@/db/seed-data";
 import { uberColors, uberRounded, uberSpacing, uberTypography } from "@/constants/theme";
 import { UberSkeleton } from "@/components/ui/uber-skeleton";
+import { Paths, File } from "expo-file-system";
+import { shareAsync, isAvailableAsync } from "expo-sharing";
 import { useEffect, useState } from "react";
 
 type ThemeOption = "light" | "dark" | "system";
@@ -22,6 +25,7 @@ const THEME_OPTIONS: { value: ThemeOption; label: string; icon: string }[] = [
 ];
 
 export default function SettingsScreen() {
+  const router = useRouter();
   const { colorMode, setColorMode } = useThemeContext();
   const scheme = useColorScheme();
   const isDark = scheme === "dark";
@@ -81,6 +85,21 @@ export default function SettingsScreen() {
                 </View>
               </View>
 
+              {/* Reports */}
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Reports</Text>
+                <Pressable
+                  style={({ pressed }) => [styles.reportButton, pressed && styles.pressedBlack]}
+                  onPress={() => router.push("/report-builder" as any)}
+                >
+                  <Ionicons name="document-outline" size={18} color={uberColors.onPrimary} />
+                  <Text style={styles.reportButtonText}>Report Builder</Text>
+                </Pressable>
+                <Text style={styles.sectionHint}>
+                  Generate and export professional PDF reports for expenses, suppliers, invoices, products, and more.
+                </Text>
+              </View>
+
               {/* Data */}
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Data</Text>
@@ -123,6 +142,64 @@ export default function SettingsScreen() {
                 </Pressable>
                 <Text style={styles.sectionHint}>
                   Populates the database with sample suppliers, customers, expenses, products, invoices, and transactions for testing.
+                </Text>
+              </View>
+
+              {/* Export */}
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Export</Text>
+                <Pressable
+                  style={({ pressed }) => [styles.exportButton, pressed && styles.pressedBlack]}
+                  onPress={async () => {
+                    try {
+                      const json = await exportDataAsJson();
+                      const file = new File(Paths.document, "my-app-export.json");
+                      file.write(json, { encoding: "utf8" });
+                      const available = await isAvailableAsync();
+                      if (available) {
+                        await shareAsync(file.uri, {
+                          mimeType: "application/json",
+                          dialogTitle: "Export My App Data",
+                        });
+                      } else {
+                        Alert.alert("Saved", `Data exported to:\n${file.uri}`);
+                      }
+                    } catch (error) {
+                      Alert.alert("Error", "Failed to export data.");
+                      console.error(error);
+                    }
+                  }}
+                >
+                  <Ionicons name="download-outline" size={18} color={uberColors.onPrimary} />
+                  <Text style={styles.exportButtonText}>Export data as JSON</Text>
+                </Pressable>
+                <Pressable
+                  style={({ pressed }) => [styles.exportButton, pressed && styles.pressedBlack]}
+                  onPress={async () => {
+                    try {
+                      const sql = getSchemaSQL();
+                      const file = new File(Paths.document, "my-app-schema.sql");
+                      file.write(sql, { encoding: "utf8" });
+                      const available = await isAvailableAsync();
+                      if (available) {
+                        await shareAsync(file.uri, {
+                          mimeType: "application/sql",
+                          dialogTitle: "Export Database Schema",
+                        });
+                      } else {
+                        Alert.alert("Saved", `Schema exported to:\n${file.uri}`);
+                      }
+                    } catch (error) {
+                      Alert.alert("Error", "Failed to export schema.");
+                      console.error(error);
+                    }
+                  }}
+                >
+                  <Ionicons name="code-slash-outline" size={18} color={uberColors.onPrimary} />
+                  <Text style={styles.exportButtonText}>Export schema as SQL</Text>
+                </Pressable>
+                <Text style={styles.sectionHint}>
+                  Export all your data as JSON for backup or migration, or download the SQL schema to recreate the database on a desktop application.
                 </Text>
               </View>
 
@@ -191,6 +268,21 @@ const styles = StyleSheet.create({
     fontFamily: uberTypography.caption.fontFamily,
   },
   themeOptionLabelSelected: { color: uberColors.onPrimary },
+  reportButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: uberSpacing.sm,
+    backgroundColor: uberColors.primary,
+    borderRadius: uberRounded.pill,
+    paddingVertical: uberSpacing.md,
+  },
+  reportButtonText: {
+    color: uberColors.onPrimary,
+    fontWeight: "500",
+    fontSize: uberTypography.buttonMd.fontSize,
+    fontFamily: uberTypography.buttonMd.fontFamily,
+  },
   seedButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -207,6 +299,21 @@ const styles = StyleSheet.create({
     backgroundColor: "#b91c1c",
   },
   seedButtonText: {
+    color: uberColors.onPrimary,
+    fontWeight: "500",
+    fontSize: uberTypography.buttonMd.fontSize,
+    fontFamily: uberTypography.buttonMd.fontFamily,
+  },
+  exportButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: uberSpacing.sm,
+    backgroundColor: uberColors.primary,
+    borderRadius: uberRounded.pill,
+    paddingVertical: uberSpacing.md,
+  },
+  exportButtonText: {
     color: uberColors.onPrimary,
     fontWeight: "500",
     fontSize: uberTypography.buttonMd.fontSize,

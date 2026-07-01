@@ -1,21 +1,28 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useIsFocused } from "@react-navigation/native";
+import { useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { FlatList, StyleSheet, Text, View } from "react-native";
+import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import TabAnimatedView from "@/components/ui/tab-animated-view";
 import { useTabDirection } from "@/components/ui/tab-direction";
-import { SkeletonCard } from "@/components/ui/uber-skeleton";
-import { getAllProducts, type Product } from "@/db/index";
-import { uberColors, uberRounded, uberSpacing, uberTypography } from "@/constants/theme";
 import { UberEmptyState } from "@/components/ui/uber-empty-state";
+import { SkeletonCard } from "@/components/ui/uber-skeleton";
+import {
+  uberColors,
+  uberRounded,
+  uberSpacing,
+  uberTypography,
+} from "@/constants/theme";
+import { getAllProducts, type Product } from "@/db/index";
 
 export default function ProductsScreen() {
   const isFocused = useIsFocused();
   const { setIndex } = useTabDirection();
+  const router = useRouter();
   const [productList, setProductList] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -38,7 +45,13 @@ export default function ProductsScreen() {
   }, [isFocused, setIndex]);
 
   const renderProduct = ({ item }: { item: Product }) => (
-    <View style={styles.productCard}>
+    <Pressable
+      style={({ pressed }) => [
+        styles.productCard,
+        pressed && styles.productCardPressed,
+      ]}
+      onPress={() => router.push(`/product-purchases?id=${item.id}` as any)}
+    >
       <View style={styles.productIcon}>
         <Ionicons name="cube-outline" size={20} color={uberColors.ink} />
       </View>
@@ -51,7 +64,8 @@ export default function ProductsScreen() {
       <View style={styles.productMeta}>
         {item.price ? (
           <Text style={styles.productPrice}>
-            ${item.price.toLocaleString(undefined, {
+            Rs{" "}
+            {item.price.toLocaleString(undefined, {
               minimumFractionDigits: 2,
             })}
           </Text>
@@ -67,7 +81,8 @@ export default function ProductsScreen() {
           </Text>
         ) : null}
       </View>
-    </View>
+      <Ionicons name="chevron-forward" size={14} color={uberColors.mute} />
+    </Pressable>
   );
 
   return (
@@ -112,6 +127,7 @@ const styles = StyleSheet.create({
     padding: uberSpacing.lg,
     gap: uberSpacing.md,
   },
+  productCardPressed: { opacity: 0.7 },
   productIcon: {
     width: 40,
     height: 40,

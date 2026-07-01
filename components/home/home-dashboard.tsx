@@ -28,6 +28,7 @@ import {
   getAllExpenses,
   getAllInvoices,
   getAllSuppliers,
+  getTotalSupplierBalance,
 } from "@/db/index";
 
 const CHART_MODES = [
@@ -53,13 +54,13 @@ const chartData: Record<
 > = {
   Expenses: {
     subtitle: "Monthly spend",
-    value: "$18.8K",
+    value: "Rs 18.8K",
     caption: "Tap to preview values",
     data: [4200, 3900, 4800, 4350, 4700, 5100, 4950],
   },
   Cashflow: {
     subtitle: "Net inflow",
-    value: "$12.4K",
+    value: "Rs 12.4K",
     caption: "Swipe between categories",
     data: [3100, 2900, 3350, 3500, 3650, 3900, 4200],
   },
@@ -126,27 +127,39 @@ export default function HomeDashboard() {
       getAllCustomers(),
       getAllExpenses(),
       getAllInvoices(),
-    ]).then(([suppliers, customers, expenses, invoices]) => {
+      getTotalSupplierBalance(),
+    ]).then(([suppliers, customers, expenses, invoices, owedToSuppliers]) => {
       const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
+      const totalInvoiced = invoices.reduce((sum, inv) => sum + inv.amount, 0);
+      const receivables = invoices
+        .filter((inv) => inv.status !== "paid")
+        .reduce((sum, inv) => sum + inv.amount, 0);
+      const fmt = (n: number) =>
+        n.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+
       setCapsules([
         {
-          title: "Suppliers",
-          value: String(suppliers.length),
+          title: "Owed to Suppliers",
+          value: `Rs ${fmt(Math.max(owedToSuppliers, 0))}`,
+          subtitle: `${suppliers.length} supplier${suppliers.length !== 1 ? "s" : ""}`,
           color: uberColors.primary,
         },
         {
-          title: "Customers",
-          value: String(customers.length),
+          title: "Receivables",
+          value: `Rs ${fmt(receivables)}`,
+          subtitle: `${customers.length} customer${customers.length !== 1 ? "s" : ""}`,
           color: uberColors.primary,
         },
         {
           title: "Expenses",
-          value: `$${totalExpenses.toLocaleString(undefined, { minimumFractionDigits: 0 })}`,
+          value: `Rs ${fmt(totalExpenses)}`,
+          subtitle: `${expenses.length} entr${expenses.length !== 1 ? "ies" : "y"}`,
           color: uberColors.primary,
         },
         {
-          title: "Invoices",
-          value: String(invoices.length),
+          title: "Invoiced",
+          value: `Rs ${fmt(totalInvoiced)}`,
+          subtitle: `${invoices.length} invoice${invoices.length !== 1 ? "s" : ""}`,
           color: uberColors.primary,
         },
       ]);
@@ -200,13 +213,13 @@ export default function HomeDashboard() {
           toValue: x,
           duration: 250,
           easing: Easing.out(Easing.ease),
-          useNativeDriver: true,
+          useNativeDriver: false,
         }),
         Animated.timing(indicatorWidth, {
           toValue: width,
           duration: 250,
           easing: Easing.out(Easing.ease),
-          useNativeDriver: true,
+          useNativeDriver: false,
         }),
       ]).start();
     }
@@ -301,15 +314,23 @@ export default function HomeDashboard() {
             transform: [{ translateY: menuTranslateY }],
           },
         ]}
-      >        {menuOptions.map((option) => (
+      >
+        {menuOptions.map((option) => (
           <Pressable
             key={option.label}
             accessibilityLabel={option.label}
             onPress={() => handleSelect(option.route)}
-            style={({ pressed }) => [styles.menuItem, pressed && styles.menuItemPressed]}
+            style={({ pressed }) => [
+              styles.menuItem,
+              pressed && styles.menuItemPressed,
+            ]}
           >
             <View style={styles.menuIcon}>
-              <Ionicons name={option.icon as never} size={18} color={uberColors.ink} />
+              <Ionicons
+                name={option.icon as never}
+                size={18}
+                color={uberColors.ink}
+              />
             </View>
             <Text style={styles.menuText}>{option.label}</Text>
           </Pressable>

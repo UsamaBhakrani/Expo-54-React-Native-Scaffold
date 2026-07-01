@@ -87,7 +87,7 @@ export default function ExpensesScreen() {
           <Text style={styles.categoryCount}>{item.count} entries</Text>
         </View>
         <Text style={styles.categoryTotal}>
-          ${item.total.toLocaleString(undefined, {
+          Rs ${item.total.toLocaleString(undefined, {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2,
           })}
@@ -116,7 +116,7 @@ export default function ExpensesScreen() {
                   {startDate || endDate ? "Total (filtered)" : "Total expenses"}
                 </Text>
                 <Text style={styles.totalValue}>
-                  ${totalExpenses.toLocaleString(undefined, {
+                  Rs ${totalExpenses.toLocaleString(undefined, {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2,
                   })}

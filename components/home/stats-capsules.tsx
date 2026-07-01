@@ -7,6 +7,7 @@ import { uberColors, uberRounded, uberSpacing, uberTypography } from "@/constant
 export type StatsCapsule = {
   title: string;
   value: string;
+  subtitle?: string;
   color: string;
 };
 
@@ -17,7 +18,7 @@ type Props = {
 const FALLBACK_DATA: StatsCapsule[] = [
   { title: "Suppliers", value: "0", color: uberColors.primary },
   { title: "Customers", value: "0", color: uberColors.primary },
-  { title: "Expenses", value: "$0", color: uberColors.primary },
+  { title: "Expenses", value: "Rs 0", color: uberColors.primary },
   { title: "Invoices", value: "0", color: uberColors.primary },
 ];
 
@@ -33,6 +34,9 @@ export default function StatsCapsules({ data }: Props) {
         >
           <Text style={styles.title}>{capsule.title}</Text>
           <Text style={styles.value}>{capsule.value}</Text>
+          {capsule.subtitle ? (
+            <Text style={styles.subtitle}>{capsule.subtitle}</Text>
+          ) : null}
         </View>
       ))}
     </View>
@@ -65,5 +69,11 @@ const styles = StyleSheet.create({
     fontWeight: uberTypography.displaySm.fontWeight,
     color: uberColors.ink,
     fontFamily: uberTypography.displaySm.fontFamily,
+  },
+  subtitle: {
+    fontSize: uberTypography.caption.fontSize,
+    color: uberColors.mute,
+    fontFamily: uberTypography.caption.fontFamily,
+    marginTop: 2,
   },
 });

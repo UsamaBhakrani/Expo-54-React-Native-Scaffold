@@ -3,7 +3,7 @@ import DateTimePicker, { type DateTimePickerEvent } from "@react-native-communit
 import React, { useState } from "react";
 import { Modal, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 
-import { uberColors, uberRounded, uberSpacing, uberTypography } from "@/constants/theme";
+import { uberColors, uberRounded, uberShadows, uberSpacing, uberTypography } from "@/constants/theme";
 
 type DatePickerFieldProps = {
   label: string;
@@ -114,11 +114,8 @@ const styles = StyleSheet.create({
     backgroundColor: uberColors.canvas,
     borderTopLeftRadius: uberRounded.xl, borderTopRightRadius: uberRounded.xl,
     paddingBottom: 34,
-    shadowColor: "#000",
-    shadowOpacity: 0.16,
-    shadowRadius: 24,
+    ...uberShadows.level2,
     shadowOffset: { width: 0, height: -4 },
-    elevation: 10,
   },
   iosPickerHeader: {
     flexDirection: "row", justifyContent: "space-between", alignItems: "center",
@@ -137,7 +134,8 @@ const styles = StyleSheet.create({
   },
   doneText: {
     fontSize: uberTypography.bodyMdStrong.fontSize,
-    color: uberColors.ink, fontWeight: "600",
+    fontWeight: uberTypography.bodyMdStrong.fontWeight,
+    color: uberColors.ink,
     fontFamily: uberTypography.bodyMdStrong.fontFamily,
   },
 });

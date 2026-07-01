@@ -1,19 +1,24 @@
-import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useEffect, useState } from "react";
 import { Alert, ScrollView, StyleSheet, View } from "react-native";
+import UberConfirmModal from "@/components/ui/uber-confirm-modal";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { UberButton } from "@/components/ui/uber-button";
 import { UberHeader } from "@/components/ui/uber-header";
 import { UberInput } from "@/components/ui/uber-input";
 import { uberColors, uberSpacing } from "@/constants/theme";
-import { insertCustomer } from "@/db/index";
+import { insertCustomer, updateCustomer, deleteCustomer, getCustomerById } from "@/db/index";
 
 export const options = { headerShown: false };
 
 export default function CreateCustomerScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(!!id);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const isEditing = !!id;
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -33,14 +38,20 @@ export default function CreateCustomerScreen() {
     }
     setIsSubmitting(true);
     try {
-      await insertCustomer({
+      const data = {
         name: form.name.trim(),
         email: form.email.trim() || null,
         phone: form.phone.trim() || null,
         address: form.address.trim() || null,
         notes: form.notes.trim() || null,
-      });
-      Alert.alert("Customer created", "Your new customer has been saved.");
+      };
+      if (isEditing) {
+        await updateCustomer(Number(id), data);
+        Alert.alert("Customer updated", "Changes have been saved.");
+      } else {
+        await insertCustomer(data);
+        Alert.alert("Customer created", "Your new customer has been saved.");
+      }
       router.back();
     } catch {
       Alert.alert("Error", "Unable to save the customer right now.");
@@ -49,9 +60,45 @@ export default function CreateCustomerScreen() {
     }
   };
 
+  const handleDeleteConfirm = async () => {
+    try {
+      await deleteCustomer(Number(id));
+      setShowDeleteModal(false);
+      Alert.alert("Deleted", "Customer has been removed.");
+      router.back();
+    } catch {
+      Alert.alert("Error", "Unable to delete this customer.");
+    }
+  };
+
+  useEffect(() => {
+    if (id) {
+      getCustomerById(Number(id)).then((results) => {
+        const c = results[0];
+        if (c) {
+          setForm({
+            name: c.name,
+            email: c.email ?? "",
+            phone: c.phone ?? "",
+            address: c.address ?? "",
+            notes: c.notes ?? "",
+          });
+        }
+        setIsLoading(false);
+      });
+    }
+  }, [id]);
+
   return (
     <SafeAreaView style={styles.safeArea}>
-      <UberHeader title="New customer" subtitle="Add a new customer" />
+      <UberConfirmModal
+        visible={showDeleteModal}
+        title="Delete customer"
+        message="Are you sure you want to delete this customer? This cannot be undone."
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => setShowDeleteModal(false)}
+      />
+      <UberHeader title={isEditing ? "Edit customer" : "New customer"} subtitle={isEditing ? "Update customer details" : "Add a new customer"} />
       <ScrollView contentContainerStyle={styles.container}>
         <UberInput
           label="Customer name"
@@ -96,12 +143,20 @@ export default function CreateCustomerScreen() {
           />
           <UberButton
             variant="primary"
-            label={isSubmitting ? "Saving..." : "Create customer"}
+            label={isSubmitting ? "Saving..." : isEditing ? "Save changes" : "Create customer"}
             onPress={handleSubmit}
             disabled={isSubmitting}
             loading={isSubmitting}
           />
         </View>
+        {isEditing && (
+          <UberButton
+            variant="danger"
+            label="Delete customer"
+            icon="trash-outline"
+            onPress={() => setShowDeleteModal(true)}
+          />
+        )}
       </ScrollView>
     </SafeAreaView>
   );

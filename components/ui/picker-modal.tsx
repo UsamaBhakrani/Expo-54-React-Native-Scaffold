@@ -1,3 +1,4 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import React from "react";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
@@ -25,13 +26,16 @@ export default function PickerModal({
 
   return (
     <View style={styles.container}>
+      {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + uberSpacing.md }]}>
         <Pressable onPress={onClose} style={styles.cancelButton}>
-          <Text style={styles.cancelText}>Cancel</Text>
+          <Ionicons name="close" size={20} color={uberColors.ink} />
         </Pressable>
         <Text style={styles.title}>{title}</Text>
         <View style={styles.headerSpacer} />
       </View>
+
+      {/* List */}
       <FlatList
         data={data}
         keyExtractor={(item) => String(item.id)}
@@ -39,18 +43,37 @@ export default function PickerModal({
           const isSelected = item.id === selectedId;
           return (
             <Pressable
-              style={({ pressed }) => [styles.item, pressed && styles.itemPressed, isSelected && styles.itemSelected]}
+              style={({ pressed }) => [
+                styles.item,
+                pressed && styles.itemPressed,
+                isSelected && styles.itemSelected,
+              ]}
               onPress={() => onSelect(item)}
             >
               <View style={styles.itemContent}>
-                <Text style={styles.itemLabel}>{item.label}</Text>
-                {item.subtitle ? <Text style={styles.itemSubtitle}>{item.subtitle}</Text> : null}
+                <Text style={[styles.itemLabel, isSelected && styles.itemLabelSelected]}>
+                  {item.label}
+                </Text>
+                {item.subtitle ? (
+                  <Text style={[styles.itemSubtitle, isSelected && styles.itemSubtitleSelected]}>
+                    {item.subtitle}
+                  </Text>
+                ) : null}
               </View>
-              {isSelected && <Text style={styles.checkmark}>✓</Text>}
+              {isSelected && (
+                <View style={styles.checkmarkCircle}>
+                  <Ionicons name="checkmark" size={16} color={uberColors.onPrimary} />
+                </View>
+              )}
             </Pressable>
           );
         }}
-        ListEmptyComponent={<View style={styles.empty}><Text style={styles.emptyText}>{emptyText}</Text></View>}
+        ListEmptyComponent={
+          <View style={styles.empty}>
+            <Ionicons name="cube-outline" size={40} color={uberColors.mute} />
+            <Text style={styles.emptyText}>{emptyText}</Text>
+          </View>
+        }
         contentContainerStyle={styles.list}
       />
     </View>
@@ -68,10 +91,12 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1, borderBottomColor: uberColors.canvasSoft,
     backgroundColor: uberColors.canvas,
   },
-  cancelButton: { minWidth: 60 },
-  cancelText: {
-    fontSize: uberTypography.bodyMd.fontSize, color: uberColors.ink, fontWeight: "500",
-    fontFamily: uberTypography.bodyMd.fontFamily,
+  cancelButton: {
+    width: 36, height: 36,
+    borderRadius: uberRounded.full,
+    backgroundColor: uberColors.canvasSoft,
+    alignItems: "center", justifyContent: "center",
+    minWidth: 36,
   },
   title: {
     fontSize: uberTypography.bodyMdStrong.fontSize,
@@ -79,12 +104,19 @@ const styles = StyleSheet.create({
     color: uberColors.ink, textAlign: "center", flex: 1,
     fontFamily: uberTypography.bodyMdStrong.fontFamily,
   },
-  headerSpacer: { minWidth: 60 },
-  list: { padding: uberSpacing.lg, gap: uberSpacing.sm },
+  headerSpacer: { width: 36 },
+  list: {
+    padding: uberSpacing.lg,
+    paddingBottom: 40,
+    gap: uberSpacing.sm,
+  },
   item: {
-    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    padding: uberSpacing.lg, backgroundColor: uberColors.canvasSoft,
-    borderRadius: uberRounded.lg, marginBottom: uberSpacing.sm,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: uberSpacing.lg,
+    backgroundColor: uberColors.canvasSoft,
+    borderRadius: uberRounded.lg,
   },
   itemPressed: { opacity: 0.7 },
   itemSelected: {
@@ -92,14 +124,37 @@ const styles = StyleSheet.create({
   },
   itemContent: { flex: 1, gap: 2 },
   itemLabel: {
-    fontSize: uberTypography.bodyMd.fontSize, color: uberColors.ink,
-    fontWeight: "500", fontFamily: uberTypography.bodyMd.fontFamily,
+    fontSize: uberTypography.bodyMd.fontSize,
+    color: uberColors.ink,
+    fontWeight: "500",
+    fontFamily: uberTypography.bodyMd.fontFamily,
   },
+  itemLabelSelected: { color: uberColors.onPrimary },
   itemSubtitle: {
-    fontSize: uberTypography.bodySm.fontSize, color: uberColors.body,
-    fontFamily: uberTypography.bodySm.fontFamily, marginTop: 2,
+    fontSize: uberTypography.bodySm.fontSize,
+    color: uberColors.body,
+    fontFamily: uberTypography.bodySm.fontFamily,
+    marginTop: 2,
   },
-  checkmark: { fontSize: 18, color: uberColors.onPrimary, fontWeight: "700", marginLeft: uberSpacing.md },
-  empty: { paddingVertical: 60, alignItems: "center" },
-  emptyText: { fontSize: uberTypography.bodySm.fontSize, color: uberColors.mute, fontFamily: uberTypography.bodySm.fontFamily },
+  itemSubtitleSelected: { color: uberColors.onPrimary, opacity: 0.8 },
+  checkmarkCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: uberSpacing.md,
+  },
+  empty: {
+    paddingVertical: 80,
+    alignItems: "center",
+    gap: uberSpacing.sm,
+  },
+  emptyText: {
+    fontSize: uberTypography.bodyMd.fontSize,
+    color: uberColors.mute,
+    fontFamily: uberTypography.bodyMd.fontFamily,
+    textAlign: "center",
+  },
 });

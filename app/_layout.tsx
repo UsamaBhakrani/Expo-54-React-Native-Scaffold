@@ -45,6 +45,10 @@ function InnerRoot() {
         <Stack.Screen name="supplier-ledger" options={{ headerShown: false }} />
         <Stack.Screen name="create-purchase" options={{ headerShown: false }} />
         <Stack.Screen name="expense-detail" options={{ headerShown: false }} />
+        <Stack.Screen name="product-purchases" options={{ headerShown: false }} />
+        <Stack.Screen name="customer-ledger" options={{ headerShown: false }} />
+        <Stack.Screen name="report-builder" options={{ headerShown: false }} />
+        <Stack.Screen name="invoice-pdf" options={{ headerShown: false }} />
         <Stack.Screen
           name="modal"
           options={{ presentation: "modal", title: "Modal" }}

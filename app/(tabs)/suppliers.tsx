@@ -87,10 +87,10 @@ export default function SuppliersScreen() {
           ]}
         >
           {item.balance > 0
-            ? `$${item.balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
+            ? `Rs ${item.balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}`
             : item.balance < 0
-              ? `-$${Math.abs(item.balance).toLocaleString(undefined, { minimumFractionDigits: 2 })}`
-              : "$0.00"}
+              ? `-Rs ${Math.abs(item.balance).toLocaleString(undefined, { minimumFractionDigits: 2 })}`
+              : "Rs 0.00"}
         </Text>
         <Text style={styles.balanceLabel}>
           {item.balance > 0 ? "Dr" : item.balance < 0 ? "Cr" : ""}

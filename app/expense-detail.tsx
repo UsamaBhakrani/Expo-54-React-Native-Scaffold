@@ -11,6 +11,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import UberConfirmModal from "@/components/ui/uber-confirm-modal";
 
 import DatePickerField from "@/components/DatePickerField";
 import { ExpenseCategoryPicker } from "@/components/ui/expense-category-picker";
@@ -49,6 +50,7 @@ export default function ExpenseDetailScreen() {
     expenseDate: "",
     notes: "",
   });
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -93,23 +95,15 @@ export default function ExpenseDetailScreen() {
     setIsEditing(false);
   };
 
-  const handleDelete = () => {
+  const handleDeleteConfirm = async () => {
     if (!id) return;
-    Alert.alert(
-      "Delete expense",
-      "Are you sure you want to delete this expense?",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: () => {
-            deleteExpense(Number(id));
-            router.back();
-          },
-        },
-      ],
-    );
+    try {
+      await deleteExpense(Number(id));
+      setShowDeleteModal(false);
+      router.back();
+    } catch {
+      Alert.alert("Error", "Failed to delete expense.");
+    }
   };
 
   // Category list view
@@ -141,7 +135,7 @@ export default function ExpenseDetailScreen() {
                 <Text style={styles.expenseDate}>{item.expenseDate}</Text>
               </View>
               <Text style={styles.expenseAmount}>
-                $
+                Rs{" "}
                 {item.amount.toLocaleString(undefined, {
                   minimumFractionDigits: 2,
                 })}
@@ -239,10 +233,17 @@ export default function ExpenseDetailScreen() {
             variant="danger"
             label="Delete expense"
             icon="trash-outline"
-            onPress={handleDelete}
+            onPress={() => setShowDeleteModal(true)}
           />
         )}
       </ScrollView>
+      <UberConfirmModal
+        visible={showDeleteModal}
+        title="Delete expense"
+        message="Are you sure you want to delete this expense? This cannot be undone."
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => setShowDeleteModal(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -275,7 +276,7 @@ const styles = StyleSheet.create({
     color: uberColors.body,
   },
   textArea: { minHeight: 100, textAlignVertical: "top" },
-  inlineRow: { flexDirection: "row", gap: uberSpacing.md },
+  inlineRow: { flexDirection: "column", gap: uberSpacing.md },
   editBtn: {
     backgroundColor: uberColors.primary,
     borderRadius: uberRounded.pill,

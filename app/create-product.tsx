@@ -1,4 +1,4 @@
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   Alert,
@@ -8,6 +8,7 @@ import {
   Text,
   View,
 } from "react-native";
+import UberConfirmModal from "@/components/ui/uber-confirm-modal";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { UberButton } from "@/components/ui/uber-button";
@@ -15,7 +16,7 @@ import { UberHeader } from "@/components/ui/uber-header";
 import { UberInput } from "@/components/ui/uber-input";
 import PickerModal from "@/components/ui/picker-modal";
 import type { PickerItem } from "@/components/ui/picker-modal";
-import { getAllSuppliers, getNextSku, insertProduct, type Supplier } from "@/db/index";
+import { getAllSuppliers, getNextSku, insertProduct, updateProduct, deleteProduct, getProductById, type Supplier } from "@/db/index";
 import {
   uberColors,
   uberRounded,
@@ -26,8 +27,12 @@ import {
 export const options = { headerShown: false };
 
 export default function CreateProductScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(!!id);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const isEditing = !!id;
   const [supplierOptions, setSupplierOptions] = useState<PickerItem[]>([]);
   const [showSupplierPicker, setShowSupplierPicker] = useState(false);
   const [form, setForm] = useState({
@@ -53,11 +58,27 @@ export default function CreateProductScreen() {
 
   useEffect(() => {
     loadSuppliers();
-    // Auto-populate SKU from last ID
-    getNextSku().then((sku) =>
-      setForm((prev) => ({ ...prev, sku })),
-    );
-  }, [loadSuppliers]);
+    if (id) {
+      getProductById(Number(id)).then((p) => {
+        if (p) {
+          setForm({
+            name: p.name,
+            sku: p.sku ?? "",
+            price: p.price ? String(p.price) : "",
+            stock: p.stock != null ? String(p.stock) : "",
+            supplierId: p.supplierId ? String(p.supplierId) : "",
+            notes: p.notes ?? "",
+          });
+        }
+        setIsLoading(false);
+      });
+    } else {
+      // Auto-populate SKU from last ID
+      getNextSku().then((sku) =>
+        setForm((prev) => ({ ...prev, sku })),
+      );
+    }
+  }, [id, loadSuppliers]);
 
   const handleChange = (field: keyof typeof form, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -70,20 +91,37 @@ export default function CreateProductScreen() {
     }
     setIsSubmitting(true);
     try {
-      await insertProduct({
+      const data = {
         name: form.name.trim(),
         sku: form.sku.trim() || null,
         price: form.price ? Number(form.price) : null,
         stock: form.stock ? Number(form.stock) : null,
         supplierId: form.supplierId ? Number(form.supplierId) : null,
         notes: form.notes.trim() || null,
-      });
-      Alert.alert("Product created", "Your new product has been saved.");
+      };
+      if (isEditing) {
+        await updateProduct(Number(id), data);
+        Alert.alert("Product updated", "Changes have been saved.");
+      } else {
+        await insertProduct(data);
+        Alert.alert("Product created", "Your new product has been saved.");
+      }
       router.back();
     } catch {
       Alert.alert("Error", "Unable to save the product right now.");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
+    try {
+      await deleteProduct(Number(id));
+      setShowDeleteModal(false);
+      Alert.alert("Deleted", "Product has been removed.");
+      router.back();
+    } catch {
+      Alert.alert("Error", "Unable to delete this product.");
     }
   };
 
@@ -104,7 +142,14 @@ export default function CreateProductScreen() {
         title="Select Supplier"
         emptyText="No suppliers found. Create one first."
       />
-      <UberHeader title="New product" subtitle="Add a new product" />
+      <UberConfirmModal
+        visible={showDeleteModal}
+        title="Delete product"
+        message="Are you sure you want to delete this product? This cannot be undone."
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => setShowDeleteModal(false)}
+      />
+      <UberHeader title={isEditing ? "Edit product" : "New product"} subtitle={isEditing ? "Update product details" : "Add a new product"} />
       <ScrollView contentContainerStyle={styles.container}>
         <UberInput
           label="Product name"
@@ -170,12 +215,20 @@ export default function CreateProductScreen() {
           />
           <UberButton
             variant="primary"
-            label={isSubmitting ? "Saving..." : "Create product"}
+            label={isSubmitting ? "Saving..." : isEditing ? "Save changes" : "Create product"}
             onPress={handleSubmit}
             disabled={isSubmitting}
             loading={isSubmitting}
           />
         </View>
+        {isEditing && (
+          <UberButton
+            variant="danger"
+            label="Delete product"
+            icon="trash-outline"
+            onPress={() => setShowDeleteModal(true)}
+          />
+        )}
       </ScrollView>
     </SafeAreaView>
   );

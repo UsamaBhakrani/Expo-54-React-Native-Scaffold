@@ -124,6 +124,14 @@ export function getCustomerById(id: number) {
   return getDb().select().from(customers).where(eq(customers.id, id)).execute();
 }
 
+export function updateCustomer(id: number, data: Partial<NewCustomer>) {
+  return getDb().update(customers).set(data).where(eq(customers.id, id)).execute();
+}
+
+export function deleteCustomer(id: number) {
+  return getDb().delete(customers).where(eq(customers.id, id)).execute();
+}
+
 // ---- Supplier CRUD ----
 
 export type NewSupplier = typeof suppliers.$inferInsert;
@@ -144,6 +152,10 @@ export function getAllSuppliers() {
 export async function getSupplierById(id: number) {
   const results = await getDb().select().from(suppliers).where(eq(suppliers.id, id)).execute();
   return results[0];
+}
+
+export function deleteSupplier(id: number) {
+  return getDb().delete(suppliers).where(eq(suppliers.id, id)).execute();
 }
 
 // ---- Auto-increment helpers ----
@@ -188,6 +200,19 @@ export function getAllProducts() {
   return getDb().select().from(products).execute();
 }
 
+export async function getProductById(id: number) {
+  const results = await getDb().select().from(products).where(eq(products.id, id)).execute();
+  return results[0];
+}
+
+export function updateProduct(id: number, data: Partial<NewProduct>) {
+  return getDb().update(products).set(data).where(eq(products.id, id)).execute();
+}
+
+export function deleteProduct(id: number) {
+  return getDb().delete(products).where(eq(products.id, id)).execute();
+}
+
 // ---- Invoice CRUD ----
 
 export type NewInvoice = typeof invoices.$inferInsert;
@@ -199,6 +224,73 @@ export function insertInvoice(data: Omit<NewInvoice, "id">) {
 
 export function getAllInvoices() {
   return getDb().select().from(invoices).execute();
+}
+
+export async function getInvoiceById(id: number) {
+  const results = await getDb().select().from(invoices).where(eq(invoices.id, id)).execute();
+  return results[0];
+}
+
+export function updateInvoice(id: number, data: Partial<NewInvoice>) {
+  return getDb().update(invoices).set(data).where(eq(invoices.id, id)).execute();
+}
+
+export function deleteInvoice(id: number) {
+  return getDb().delete(invoices).where(eq(invoices.id, id)).execute();
+}
+
+export function getInvoicesByCustomer(customerId: number, startDate?: string, endDate?: string) {
+  const conditions = [eq(invoices.customerId, customerId)];
+  if (startDate) conditions.push(gte(invoices.issueDate, startDate));
+  if (endDate) conditions.push(lte(invoices.issueDate, endDate));
+
+  return getDb()
+    .select()
+    .from(invoices)
+    .where(and(...conditions))
+    .orderBy(desc(invoices.issueDate))
+    .execute();
+}
+
+export async function getCustomerBalance(customerId: number, startDate?: string, endDate?: string) {
+  const conditions = [eq(invoices.customerId, customerId)];
+  if (startDate) conditions.push(gte(invoices.issueDate, startDate));
+  if (endDate) conditions.push(lte(invoices.issueDate, endDate));
+
+  const allInvoices = await getDb()
+    .select()
+    .from(invoices)
+    .where(and(...conditions))
+    .execute();
+
+  // Balance = total amount of unpaid invoices (not marked paid)
+  return allInvoices.reduce((sum, inv) => {
+    if (inv.status !== "paid") return sum + inv.amount;
+    return sum;
+  }, 0);
+}
+
+export function getInvoicesGroupedByStatus(customerId: number, startDate?: string, endDate?: string) {
+  const conditions = [eq(invoices.customerId, customerId)];
+  if (startDate) conditions.push(gte(invoices.issueDate, startDate));
+  if (endDate) conditions.push(lte(invoices.issueDate, endDate));
+
+  const query = getDb()
+    .select({
+      status: invoices.status,
+      total: sql<number>`SUM(${invoices.amount})`,
+      count: sql<number>`COUNT(*)`,
+    })
+    .from(invoices);
+
+  if (conditions.length > 0) {
+    query.where(and(...conditions));
+  }
+
+  return query
+    .groupBy(invoices.status)
+    .orderBy(desc(sql`SUM(${invoices.amount})`))
+    .execute();
 }
 
 // ---- Expense CRUD ----
@@ -286,6 +378,10 @@ export function updateSupplierTransaction(id: number, data: Partial<NewSupplierT
   return getDb().update(supplierTransactions).set(data).where(eq(supplierTransactions.id, id)).execute();
 }
 
+export function deleteSupplierTransaction(id: number) {
+  return getDb().delete(supplierTransactions).where(eq(supplierTransactions.id, id)).execute();
+}
+
 export function getTransactionsBySupplier(supplierId: number, startDate?: string, endDate?: string) {
   const conditions = [eq(supplierTransactions.supplierId, supplierId)];
   if (startDate) conditions.push(gte(supplierTransactions.date, startDate));
@@ -327,4 +423,127 @@ export async function getSupplierBalance(supplierId: number, startDate?: string,
     .execute();
 
   return result[0]?.balance ?? 0;
+}
+
+export function getAllSupplierTransactions(startDate?: string, endDate?: string) {
+  const conditions: ReturnType<typeof gte>[] = [];
+  if (startDate) conditions.push(gte(supplierTransactions.date, startDate));
+  if (endDate) conditions.push(lte(supplierTransactions.date, endDate));
+
+  const query = getDb()
+    .select()
+    .from(supplierTransactions);
+
+  if (conditions.length > 0) {
+    query.where(and(...conditions));
+  }
+
+  return query.orderBy(supplierTransactions.date).execute();
+}
+
+export async function getTotalSupplierBalance() {
+  const result = await getDb()
+    .select({
+      balance: sql<number>`SUM(${supplierTransactions.debit}) - SUM(${supplierTransactions.credit})`,
+    })
+    .from(supplierTransactions)
+    .execute();
+
+  return result[0]?.balance ?? 0;
+}
+
+// ---- Export / Data Portability ----
+
+/** Fetch all records from every table as a structured JSON string. */
+export async function exportDataAsJson(): Promise<string> {
+  const allCustomers = await getAllCustomers();
+  const allSuppliers = await getAllSuppliers();
+  const allProducts = await getAllProducts();
+  const allInvoices = await getAllInvoices();
+  const allExpenses = await getAllExpenses();
+  const allTransactions = await getAllSupplierTransactions();
+
+  const payload = {
+    exportedAt: new Date().toISOString(),
+    version: "1.0",
+    data: {
+      customers: allCustomers,
+      suppliers: allSuppliers,
+      products: allProducts,
+      invoices: allInvoices,
+      expenses: allExpenses,
+      supplierTransactions: allTransactions,
+    },
+  };
+
+  return JSON.stringify(payload, null, 2);
+}
+
+/** Return the full CREATE TABLE SQL schema as a text string. */
+export function getSchemaSQL(): string {
+  return `-- My App Database Schema
+-- Exported on ${new Date().toISOString()}
+
+CREATE TABLE IF NOT EXISTS customer (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  email TEXT,
+  phone TEXT,
+  address TEXT,
+  notes TEXT
+);
+
+CREATE TABLE IF NOT EXISTS supplier (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  company_name TEXT NOT NULL,
+  contact_name TEXT,
+  email TEXT,
+  phone TEXT,
+  address TEXT,
+  notes TEXT
+);
+
+CREATE TABLE IF NOT EXISTS product (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  sku TEXT,
+  price REAL,
+  stock REAL,
+  supplier_id INTEGER,
+  notes TEXT
+);
+
+CREATE TABLE IF NOT EXISTS invoice (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  invoice_number TEXT NOT NULL,
+  customer_id INTEGER,
+  customer_name TEXT NOT NULL,
+  customer_email TEXT,
+  issue_date TEXT NOT NULL,
+  due_date TEXT NOT NULL,
+  amount REAL NOT NULL,
+  status TEXT NOT NULL,
+  notes TEXT
+);
+
+CREATE TABLE IF NOT EXISTS expense (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  title TEXT NOT NULL,
+  category TEXT,
+  amount REAL NOT NULL,
+  expense_date TEXT,
+  notes TEXT
+);
+
+CREATE TABLE IF NOT EXISTS supplier_transaction (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  supplier_id INTEGER NOT NULL,
+  date TEXT NOT NULL,
+  narration TEXT NOT NULL,
+  debit REAL,
+  credit REAL,
+  balance REAL NOT NULL,
+  purchase_number TEXT
+);
+`;
 }

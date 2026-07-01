@@ -1,3 +1,4 @@
+import React, { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import DatePickerField from "@/components/DatePickerField";
@@ -21,6 +22,8 @@ export default function DateRangePicker({
   onStartDateChange,
   onEndDateChange,
 }: Props) {
+  const [activePreset, setActivePreset] = useState<number | null>(null);
+
   const presets = [
     { label: "7D", days: 7 },
     { label: "30D", days: 30 },
@@ -30,6 +33,7 @@ export default function DateRangePicker({
   ];
 
   const applyPreset = (days: number) => {
+    setActivePreset(days);
     if (days === 0) {
       onStartDateChange("");
       onEndDateChange("");
@@ -43,34 +47,49 @@ export default function DateRangePicker({
   };
 
   const clearFilter = () => {
+    setActivePreset(null);
     onStartDateChange("");
     onEndDateChange("");
   };
+
+  // Clear active preset when user manually edits a date via the picker
+  const handleStartDateChange = (date: string) => {
+    setActivePreset(null);
+    onStartDateChange(date);
+  };
+  const handleEndDateChange = (date: string) => {
+    setActivePreset(null);
+    onEndDateChange(date);
+  };
+
   const hasFilter = startDate || endDate;
 
   return (
     <View style={styles.container}>
       <View style={styles.presets}>
-        {presets.map((p) => (
-          <Pressable
-            key={p.label}
-            style={({ pressed }) => [
-              styles.presetBtn,
-              p.label === "All" && !hasFilter && styles.presetBtnActive,
-              pressed && styles.presetBtnPressed,
-            ]}
-            onPress={() => applyPreset(p.days)}
-          >
-            <Text
-              style={[
-                styles.presetText,
-                p.label === "All" && !hasFilter && styles.presetTextActive,
+        {presets.map((p) => {
+          const isActive = p.days === activePreset;
+          return (
+            <Pressable
+              key={p.label}
+              style={({ pressed }) => [
+                styles.presetBtn,
+                isActive && styles.presetBtnActive,
+                pressed && styles.presetBtnPressed,
               ]}
+              onPress={() => applyPreset(p.days)}
             >
-              {p.label}
-            </Text>
-          </Pressable>
-        ))}
+              <Text
+                style={[
+                  styles.presetText,
+                  isActive && styles.presetTextActive,
+                ]}
+              >
+                {p.label}
+              </Text>
+            </Pressable>
+          );
+        })}
         {hasFilter ? (
           <Pressable
             style={({ pressed }) => [styles.clearBtn, pressed && styles.clearBtnPressed]}
@@ -85,14 +104,14 @@ export default function DateRangePicker({
           compact
           label="From"
           value={startDate}
-          onChange={onStartDateChange}
+          onChange={handleStartDateChange}
           placeholder="Start date"
         />
         <DatePickerField
           compact
           label="To"
           value={endDate}
-          onChange={onEndDateChange}
+          onChange={handleEndDateChange}
           placeholder="End date"
         />
       </View>
@@ -104,18 +123,18 @@ const styles = StyleSheet.create({
   container: { gap: uberSpacing.sm },
   presets: { flexDirection: "row", gap: uberSpacing.xs, alignItems: "center" },
   presetBtn: {
-    paddingHorizontal: uberSpacing.md,
-    paddingVertical: uberSpacing.xs,
+    paddingHorizontal: uberSpacing.lg,
+    paddingVertical: uberSpacing.sm,
     borderRadius: uberRounded.pill,
     backgroundColor: uberColors.canvasSoft,
   },
   presetBtnActive: { backgroundColor: uberColors.primary },
   presetBtnPressed: { opacity: 0.7 },
   presetText: {
-    fontSize: uberTypography.caption.fontSize,
-    fontWeight: "600",
+    fontSize: uberTypography.bodySmStrong.fontSize,
+    fontWeight: uberTypography.bodySmStrong.fontWeight,
     color: uberColors.body,
-    fontFamily: uberTypography.caption.fontFamily,
+    fontFamily: uberTypography.bodySmStrong.fontFamily,
   },
   presetTextActive: { color: uberColors.onPrimary },
   clearBtn: {

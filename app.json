@@ -1,16 +1,16 @@
 {
   "expo": {
-    "name": "my-app",
-    "slug": "my-app",
+    "name": "Accountify",
+    "slug": "Accountify",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "myapp",
+    "scheme": "Accountify",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.myapp"
+      "bundleIdentifier": "com.anonymous.Accountify"
     },
     "android": {
       "adaptiveIcon": {
@@ -21,7 +21,7 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.anonymous.myapp"
+      "package": "com.anonymous.Accountify"
     },
     "web": {
       "output": "static",

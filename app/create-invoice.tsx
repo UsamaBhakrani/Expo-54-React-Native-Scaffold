@@ -1,4 +1,4 @@
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   Alert,
@@ -8,6 +8,7 @@ import {
   Text,
   View,
 } from "react-native";
+import UberConfirmModal from "@/components/ui/uber-confirm-modal";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import DatePickerField from "@/components/DatePickerField";
@@ -22,15 +23,27 @@ import {
   uberSpacing,
   uberTypography,
 } from "@/constants/theme";
-import { getAllCustomers, getNextInvoiceNumber, insertInvoice, type Customer } from "@/db/index";
+import {
+  getAllCustomers,
+  getNextInvoiceNumber,
+  insertInvoice,
+  updateInvoice,
+  deleteInvoice,
+  getInvoiceById,
+  type Customer,
+} from "@/db/index";
 
 export const options = { headerShown: false };
 
 const today = new Date().toISOString().slice(0, 10);
 
 export default function CreateInvoiceScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(!!id);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const isEditing = !!id;
   const [customerOptions, setCustomerOptions] = useState<PickerItem[]>([]);
   const [showCustomerPicker, setShowCustomerPicker] = useState(false);
   const [form, setForm] = useState({
@@ -59,11 +72,30 @@ export default function CreateInvoiceScreen() {
 
   useEffect(() => {
     loadCustomers();
-    // Auto-populate invoice number from last ID
-    getNextInvoiceNumber().then((num) =>
-      setForm((prev) => ({ ...prev, invoiceNumber: num })),
-    );
-  }, [loadCustomers]);
+    if (id) {
+      getInvoiceById(Number(id)).then((inv) => {
+        if (inv) {
+          setForm({
+            invoiceNumber: inv.invoiceNumber,
+            customerId: String(inv.customerId ?? ""),
+            customerName: inv.customerName,
+            customerEmail: inv.customerEmail ?? "",
+            issueDate: inv.issueDate,
+            dueDate: inv.dueDate,
+            amount: String(inv.amount),
+            status: inv.status,
+            notes: inv.notes ?? "",
+          });
+        }
+        setIsLoading(false);
+      });
+    } else {
+      // Auto-populate invoice number from last ID
+      getNextInvoiceNumber().then((num) =>
+        setForm((prev) => ({ ...prev, invoiceNumber: num })),
+      );
+    }
+  }, [id, loadCustomers]);
 
   const handleChange = (field: keyof typeof form, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -80,7 +112,7 @@ export default function CreateInvoiceScreen() {
     }
     setIsSubmitting(true);
     try {
-      await insertInvoice({
+      const data = {
         invoiceNumber: form.invoiceNumber.trim(),
         customerId: form.customerId ? Number(form.customerId) : null,
         customerName: form.customerName.trim(),
@@ -90,13 +122,30 @@ export default function CreateInvoiceScreen() {
         amount: Number(form.amount),
         status: form.status.trim() || "draft",
         notes: form.notes.trim() || null,
-      });
-      Alert.alert("Invoice created", "Your new invoice has been saved.");
+      };
+      if (isEditing) {
+        await updateInvoice(Number(id), data);
+        Alert.alert("Invoice updated", "Changes have been saved.");
+      } else {
+        await insertInvoice(data);
+        Alert.alert("Invoice created", "Your new invoice has been saved.");
+      }
       router.back();
     } catch {
       Alert.alert("Error", "Unable to save the invoice right now.");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
+    try {
+      await deleteInvoice(Number(id));
+      setShowDeleteModal(false);
+      Alert.alert("Deleted", "Invoice has been removed.");
+      router.back();
+    } catch {
+      Alert.alert("Error", "Unable to delete this invoice.");
     }
   };
 
@@ -119,7 +168,14 @@ export default function CreateInvoiceScreen() {
         title="Select Customer"
         emptyText="No customers found. Create one first."
       />
-      <UberHeader title="New invoice" subtitle="Create a new invoice" />
+      <UberConfirmModal
+        visible={showDeleteModal}
+        title="Delete invoice"
+        message="Are you sure you want to delete this invoice? This cannot be undone."
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => setShowDeleteModal(false)}
+      />
+      <UberHeader title={isEditing ? "Edit invoice" : "New invoice"} subtitle={isEditing ? "Update invoice details" : "Create a new invoice"} />
       <ScrollView contentContainerStyle={styles.container}>
         <View style={styles.formGroup}>
           <Text style={styles.label}>Customer</Text>
@@ -207,12 +263,20 @@ export default function CreateInvoiceScreen() {
           />
           <UberButton
             variant="primary"
-            label={isSubmitting ? "Saving..." : "Create invoice"}
+            label={isSubmitting ? "Saving..." : isEditing ? "Save changes" : "Create invoice"}
             onPress={handleSubmit}
             disabled={isSubmitting}
             loading={isSubmitting}
           />
         </View>
+        {isEditing && (
+          <UberButton
+            variant="danger"
+            label="Delete invoice"
+            icon="trash-outline"
+            onPress={() => setShowDeleteModal(true)}
+          />
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -233,7 +297,7 @@ const styles = StyleSheet.create({
     fontFamily: uberTypography.bodySmStrong.fontFamily,
   },
   textArea: { minHeight: 100 },
-  inlineRow: { flexDirection: "row", gap: uberSpacing.md },
+  inlineRow: { flexDirection: "column", gap: uberSpacing.md },
   pickerButton: {
     flexDirection: "row",
     alignItems: "center",

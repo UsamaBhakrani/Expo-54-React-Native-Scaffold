@@ -2,13 +2,15 @@ import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
-  FlatList, Pressable, StyleSheet, Text, TextInput, View,
+  Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import UberConfirmModal from "@/components/ui/uber-confirm-modal";
 
 import DateRangePicker from "@/components/DateRangePicker";
 import {
-  getSupplierById, getTransactionsBySupplier, getSupplierBalance, updateSupplierTransaction,
+  getSupplierById, getTransactionsBySupplier, getSupplierBalance,
+  updateSupplierTransaction, deleteSupplierTransaction, deleteSupplier,
   type Supplier, type SupplierTransaction,
 } from "@/db/index";
 import { uberColors, uberRounded, uberSpacing, uberTypography, uberShadows } from "@/constants/theme";
@@ -29,6 +31,9 @@ export default function SupplierLedgerScreen() {
   const [endDate, setEndDate] = useState(initialEnd ?? "");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState({ date: "", narration: "", debit: "", credit: "" });
+  const [showDeleteSupplierModal, setShowDeleteSupplierModal] = useState(false);
+  const [showDeleteTxnModal, setShowDeleteTxnModal] = useState(false);
+  const [pendingDeleteTxnId, setPendingDeleteTxnId] = useState<number | null>(null);
 
   const loadData = useCallback(() => {
     if (!id) return;
@@ -60,15 +65,42 @@ export default function SupplierLedgerScreen() {
 
   const cancelEdit = () => setEditingId(null);
 
+  const handleDeleteSupplierConfirm = async () => {
+    try {
+      await deleteSupplier(Number(id));
+      setShowDeleteSupplierModal(false);
+      router.back();
+    } catch {
+      Alert.alert("Error", "Unable to delete supplier.");
+    }
+  };
+
+  const handleDeleteTransaction = (txnId: number) => {
+    setPendingDeleteTxnId(txnId);
+    setShowDeleteTxnModal(true);
+  };
+
+  const handleDeleteTxnConfirm = async () => {
+    if (pendingDeleteTxnId === null) return;
+    try {
+      await deleteSupplierTransaction(pendingDeleteTxnId);
+      setShowDeleteTxnModal(false);
+      setPendingDeleteTxnId(null);
+      loadData();
+    } catch {
+      Alert.alert("Error", "Unable to delete transaction.");
+    }
+  };
+
   const formatCurrency = (val: number | null) => {
     if (val === null || val === undefined) return "—";
     return val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
   const getBalanceText = () => {
-    if (balanceDisplay > 0) return `$${balanceDisplay.toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
-    if (balanceDisplay < 0) return `-$${Math.abs(balanceDisplay).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
-    return "$0.00";
+    if (balanceDisplay > 0) return `Rs ${balanceDisplay.toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+    if (balanceDisplay < 0) return `-Rs ${Math.abs(balanceDisplay).toLocaleString(undefined, { minimumFractionDigits: 2 })}`;
+    return "Rs 0.00";
   };
 
   const getBalanceLabel = () => {
@@ -96,19 +128,60 @@ export default function SupplierLedgerScreen() {
     }
 
     return (
-      <Pressable style={styles.transactionRow} onPress={() => startEditing(item)}>
-        <Text style={styles.dateCell}>{item.date}</Text>
-        <Text style={styles.narrationCell} numberOfLines={2}>{item.narration}</Text>
-        <Text style={[styles.amountCell, styles.debitCell]}>{item.debit ? formatCurrency(item.debit) : "—"}</Text>
-        <Text style={[styles.amountCell, styles.creditCell]}>{item.credit ? formatCurrency(item.credit) : "—"}</Text>
-        <Text style={[styles.amountCell, styles.balanceCell]}>{formatCurrency(item.balance)}</Text>
-      </Pressable>
+      <View style={styles.transactionRow}>
+        <Pressable style={{ flex: 1, flexDirection: "row" }} onPress={() => startEditing(item)}>
+          <Text style={styles.dateCell}>{item.date}</Text>
+          <Text style={styles.narrationCell} numberOfLines={2}>{item.narration}</Text>
+          <Text style={[styles.amountCell, styles.debitCell]}>{item.debit ? formatCurrency(item.debit) : "—"}</Text>
+          <Text style={[styles.amountCell, styles.creditCell]}>{item.credit ? formatCurrency(item.credit) : "—"}</Text>
+          <Text style={[styles.amountCell, styles.balanceCell]}>{formatCurrency(item.balance)}</Text>
+        </Pressable>
+        <Pressable onPress={() => handleDeleteTransaction(item.id)} style={styles.deleteTxnBtn}>
+          <Ionicons name="close-circle" size={16} color={uberColors.mute} />
+        </Pressable>
+      </View>
     );
   };
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <UberHeader title={supplier?.companyName ?? "Supplier Ledger"} subtitle={supplier?.contactName ?? undefined} />
+      <UberConfirmModal
+        visible={showDeleteSupplierModal}
+        title="Delete supplier"
+        message="Are you sure? This will also delete all supplier transactions."
+        onConfirm={handleDeleteSupplierConfirm}
+        onCancel={() => setShowDeleteSupplierModal(false)}
+      />
+      <UberConfirmModal
+        visible={showDeleteTxnModal}
+        title="Delete transaction"
+        message="Are you sure? This cannot be undone."
+        onConfirm={handleDeleteTxnConfirm}
+        onCancel={() => {
+          setShowDeleteTxnModal(false);
+          setPendingDeleteTxnId(null);
+        }}
+      />
+      <UberHeader
+        title={supplier?.companyName ?? "Supplier Ledger"}
+        subtitle={supplier?.contactName ?? undefined}
+        rightAction={
+          <View style={styles.headerActions}>
+            <Pressable
+              style={styles.headerBtn}
+              onPress={() => router.push(`/create-supplier?id=${id}` as any)}
+            >
+              <Ionicons name="pencil-outline" size={18} color={uberColors.ink} />
+            </Pressable>
+            <Pressable
+              style={styles.headerBtnDanger}
+              onPress={() => setShowDeleteSupplierModal(true)}
+            >
+              <Ionicons name="trash-outline" size={18} color={uberColors.onPrimary} />
+            </Pressable>
+          </View>
+        }
+      />
       <View style={styles.content}>
         {/* Balance Card */}
         <View style={styles.balanceCard}>
@@ -192,6 +265,35 @@ const styles = StyleSheet.create({
     flexDirection: "row", paddingHorizontal: uberSpacing.sm, paddingVertical: uberSpacing.sm,
     backgroundColor: uberColors.canvasSoft, borderBottomWidth: 1,
     borderBottomColor: uberColors.surfacePressed, alignItems: "center", gap: uberSpacing.xxs,
+  },
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: uberSpacing.sm,
+  },
+  headerBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: uberRounded.full,
+    backgroundColor: uberColors.canvasSoft,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerBtnDanger: {
+    width: 36,
+    height: 36,
+    borderRadius: uberRounded.full,
+    backgroundColor: "#dc2626",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  deleteTxnBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: uberSpacing.xs,
   },
   editInput: {
     borderWidth: 1, borderColor: uberColors.mute, borderRadius: uberRounded.md,

@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useIsFocused } from "@react-navigation/native";
+import { useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
-import { FlatList, StyleSheet, Text, View } from "react-native";
+import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ThemedText } from "@/components/themed-text";
@@ -16,6 +17,7 @@ import { UberEmptyState } from "@/components/ui/uber-empty-state";
 export default function CustomersScreen() {
   const isFocused = useIsFocused();
   const { setIndex } = useTabDirection();
+  const router = useRouter();
   const [customerList, setCustomerList] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -38,7 +40,10 @@ export default function CustomersScreen() {
   }, [isFocused, setIndex]);
 
   const renderCustomer = ({ item }: { item: Customer }) => (
-    <View style={styles.customerCard}>
+    <Pressable
+      style={({ pressed }) => [styles.customerCard, pressed && styles.customerCardPressed]}
+      onPress={() => router.push(`/customer-ledger?id=${item.id}` as any)}
+    >
       <View style={styles.customerIcon}>
         <Ionicons name="people-outline" size={20} color={uberColors.ink} />
       </View>
@@ -49,7 +54,7 @@ export default function CustomersScreen() {
         ) : null}
       </View>
       <Ionicons name="chevron-forward" size={16} color={uberColors.mute} />
-    </View>
+    </Pressable>
   );
 
   return (
@@ -94,6 +99,7 @@ const styles = StyleSheet.create({
     padding: uberSpacing.lg,
     gap: uberSpacing.md,
   },
+  customerCardPressed: { opacity: 0.7 },
   customerIcon: {
     width: 40,
     height: 40,
